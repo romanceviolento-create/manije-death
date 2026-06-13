@@ -1,0 +1,6 @@
+1 , 397 ,piso negro,6, color techo,200
+2 , 399 ,piso negro,216, color techo,1800
+3 , 4 ,agua cloacas,216, color techo,200
+4 , 398 ,lava,0, color techo,200
+5 , 397 ,nido arania,0, color techo,200
+6 , 399 ,dungeon,216, color techo,200

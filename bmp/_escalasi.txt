@@ -1,0 +1,66 @@
+ 20, 0,0,15,hielo.png
+ 97, 0,0,-500,tela1.png
+ 99, 2,2,0,ventana3.png
+ 120, 1.3,1,-80,ventana3.png
+932, 1,1.4,0,pino nev
+123, 1,1.2,0,pino nev
+124, 1,1.4,0,pino nev
+125, 1,1.4,0,pino nev
+205, 0,0,0,muromina.png
+931, 1,1.4,0,pino nev
+ 131, 2,2,10,techog1.png
+152, 1,1.3,0,pino nev
+168, 1,4,0,murofortb.png
+ 174, 1.9,5,-3000,montaña1.png
+181, 1,4,0,murofortb.png
+183, 1,4,0,murofort.png
+184, 1,4,0,murofort.png
+185, 1,4,0,murofortb.png
+ 193, 1.9,5,0,montaña1.png
+ 194, 1.9,5,-1000,montaña1.png
+ 195, 1.9,5,-2000,montaña1.png
+196, 0,0,0,montad.png
+199, 1.7,3,0,monta5.png
+200, 0,0,0,montad.png
+201, 1,6,0,muro fortaleza.png
+204, 0,0,-350,techomina4.png
+ 208, 1.7,6,-1000,montañapasa.png
+ 212, 1.7,6,-10,montaña1.png
+ 213, 1.7,6,-1000,montaña1.png
+ 214, 1.7,6,-2000,montaña1.png
+ 215, 1.7,6,-2000,montaña1.png
+ 220, 1.5,4,0,monentrada.png
+ 221, 1.7,5,-30,monentrada2.png
+ 760, 1.7,5,-30,monpuerta.png
+ 761, 1.7,5,-30,monpuerta.png
+759, 4,9,-2200, torre negra levitante.png
+765, 0,0,0,portal 
+768, 1,29,-25,portal haz
+769, 1,29,-25,portal haz
+770, 1,29,-35,portal haz
+779, 1,4,0,puertafort.png
+782, 1,29,-25,portal usuario
+783, 1,29,-620,luz
+ 365, 0,0,-150,arpia.png
+ 406, 0,0,-2500,dragon1.png
+ 408, 0,0,-300,pajaro.png
+409, 0,0,-290,luzmala.png
+410, 0,0,-140,luzmala.png
+ 69, 0,0,13,puente1.png
+ 70, 0,0,5,puente2.png
+ 71, 0,0,13,puente3.png
+210, 3,3,0,padio.png
+347,0,0,-55,greenskull
+369,0,0,-60,skull
+140,2.4,3,0,arbol1_escalado
+141,2.4,3,0,arbol2_escalado
+1070,0,0,-30,flama
+144,4,4,0,arbol1
+930,4,3.5,0,arbol2
+155,0,0,-100,jaula
+175,2,2,0,hongo
+940,2,2,0,hongo
+934, 1,2,0,arbol seco
+83,2,3,0,deposito-crystal
+945,2,3,0,deposito-crystal
+946,2,3,0,deposito-crystal

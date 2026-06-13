@@ -1,0 +1,361 @@
+ 3, 0, 0, 0,0003_mar3.png
+ 4, 0, 0, 0,0004_mar2.png
+ 5, 0, 0, 0,0005_playa1.png
+ 6, 0, 0, 0,0006_pasto.png
+ 7, 0, 0, 0,0007_pasto.png
+ 8, 0, 0, 0,0008_pasto3.png
+ 9, 0, 0, 0,0009_pasto4.png
+ 10, 0, 0, 0,0010_pasto5.png
+ 11, 0, 0, 0,0011_pasto6.png
+ 12, 0, 0, 0,0012_pasto7.png
+ 15, 0, 0, 0,0015_cama1.png
+ 16, 0, 0, 0,0016_armario1.png
+ 17, 0, 0, 0,0017_mesa1.png
+ 18, 0, 80, 0,0018_muelle.png
+ 19, 0, 0, 0,0019_muelle2.png
+ 20, 0, 0, 0,0020_roca.png
+ 21, 0, 0, 0,0021_muralla.png
+ 22, 0, 0, 0,0022_mesa1.png
+ 23, 0, 0, 0,0023_vaca.png
+ 24, 0, 0, 0,0024_oveja.png
+ 25, 0, 520, 0,0025_escalera.png
+ 26, 0, 0, 0,0026_barril1.png
+ 27, 0, 0, 0,0027_bpoc.png
+ 28, 0, 0, 0,0028_barm.png
+ 29, 0, 0, 0,0029_bmag.png
+ 30, 129, 0, 0,0030_puerta2.png
+ 31, 129, 0, 0,0031_puerta.png
+ 32, 0, 0, 0,0032_puerta.png
+ 33, 0, 520, 0,0033_pisomuro.png
+ 35, 86, 0, 0,0035_puerta1.png
+ 40, 0, 0, 0,0040_aljibe1.png
+ 52, 0, 0, 6,0052_trigo.png
+ 53, 0, 0, 6,0053_aconitum.png
+ 54, 0, 0, 0,0054_restos1.png
+ 69, 0, 0, 0,0069_puente0.png
+ 70, 0, 80, 0,0070_puente2.png
+ 71, 0, 0, 0,0071_puente1.png
+82, 0, 0, 0,0082_reja.png
+83, 0, 0, 116,0083_crystal.png
+84, 783, 0, 0,0084_farol.png
+85, 0, 0, 0,0085_signo.png
+ 86, 0, 0, 0,0086_muro1.png
+87, 0, 0, 0,0087_signo.png
+ 88, 0, 0, 0,0088_bar.png
+ 89, 0, 0, 0,0089_camino.png
+ 90, 0, 0, 0,0090_camino.png
+ 91, 0, 0, 0,0091_camino.png
+ 92, 0, 0, 0,0092_muromarmol.png
+ 93, 0, 0, 0,0093_adoquin1.png
+ 94, 0, 0, 0,0094_adoquin2.png
+ 95, 0, 0, 0,0095_adoquin3.png
+ 96, 0, 0, 0,0096_tela1.png
+ 97, 0, 0, 0,0097_telaaerea.png
+ 98, 0, 0, 0,0098_telagris.png
+ 99, 0, 0, 0,0099_relleno.png
+ 100, 0, 0, 94,0100_hongo.png
+ 101, 0, 0, 94,0101_hongo.png
+ 102, 0, 0, 94,0102_arbusto2.png
+ 103, 0, 0, 94,0103_arbusto1.png
+104, 0, 0, 94,0104_arbusto.png
+105, 0, 0, 94,0105_arbusto.png
+106, 0, 0, 94,0106_arbusto.png
+107, 0, 0, 94,0107_enredadera.png
+108, 0, 0, 94,0108_enredadera.png
+109, 0, 0, 94,0109_arbusto.png
+110, 0, 0, 94,0110_arbusto.png
+111, 0, 0, 94,0111_arbusto.png
+ 115, 0, 0, 0,0115_pasasum.png
+ 116, 0, 0, 0,0116_mmina3.png
+ 117, 0, 0, 0,0117_farol.png
+ 118, 0, 0, 0,0118_murosum.png
+ 119, 129, 0, 0,0119_ventana2.png
+ 120, 130, 0, 0,0120_ventana3.png
+ 121, 0, 0, 0,0121_murovrota.png
+ 123, 0, 0, 0,0123_pinoalto2.png
+ 124, 0, 0, 0,0124_pinoalto.png
+ 125, 0, 0, 0,0125_arbol5.png
+ 128, 0, 0, 6,0128_pinorojo.png
+ 129, 0, 0, 0,0129_muro2.png
+ 130, 0, 0, 0,0130_muro4.png
+ 131, 0, 0, 0,0131_torre1.png
+ 132, 1070, 0, 0,0132_fgoblin.png
+ 133, 0, 0, 0,0133_mgoblin.png
+134, 0, 0, 0,0134_carpagob.png
+ 142, 0, 0, 94,0142_flor0.png
+ 143, 0, 0, 0,0143_pinocharca.png
+ 144, 0, 0, 6,0144_arbol4.png
+ 146, 0, 0, 6,0146_arbolnev.png
+ 147, 0, 50, 0,0147_promon1.png
+ 148, 0, 0, 0,0148_cerca1.png
+ 149, 0, 0, 6,0149_arbolseco3.png
+ 151, 0, 0, 6,0151_arbolseco4.png
+ 152, 0, 0, 6,0152_pinonev.png
+ 153, 0, 0, 6,0153_pinonev.png
+154, 0, 0, 0,0154_barricada1.png
+155, 0, 0, 0,0155_jaula.png
+156, 0, 0, 6,0156_arboldes.png
+157, 0, 0, 6,0157_arbolirra.png
+158, 0, 0, 0,0158_tamarisco.png
+159, 0, 0, 0,0159_hongogig.png
+160, 0, 0, 0,0160_hongogig.png
+166, 0, 0, 0,0166_pica.png
+167,0, 0, 0,0167_murofort.png
+168, 0, 0, 0,0168_murofort.png
+ 169, 0, 0, 0,0169_pilar1.png
+ 170, 0, 0, 0,0170_muro5.png
+ 171, 0, 0, 0,0171_pilar.png
+ 172, 0, 0, 0,0172_pilar1.png
+ 173, 0, 0, 0,0173_muro3.png
+ 174, 0, 4750, 0,0174_monta1.png
+175, 0, 0, 0,0175_hongogig.png
+ 176, 0, 0, 95,0176_cuevaoro.png
+ 177, 0, 0, 0,0177_poste.png
+ 178, 0, 0, 0,0178_estalag.png
+ 179, 0, 0, 0,0179_cueva.png
+ 180, 0, 0, 6,0180_arbol1.png
+ 181, 0, 0, 0,0181_murofort.png
+ 182, 1070, 0, 0,0182_fogon.png
+ 183, 0, 0, 0,0183_murofort.png
+ 184, 0, 0, 0,0184_puertafort.png
+ 185, 0, 0, 0,0185_murofort.png
+189, 0, 0, 0,0189_testablo.png
+ 192, 0, 0, 95,0192_cuevahie.png
+ 193, 0, 0, 0,0193_monta1.png
+ 194, 0, 0, 0,0193_monta1.png
+ 195, 0, 0, 0,0193_monta1.png
+ 196, 0, 0, 0,0196_montad.png
+ 198, 0, 0, 94,0198_junco1.png
+ 199, 0, 0, 0,0199_monta5.png
+ 200, 0, 0, 0,0200_montad.png
+ 201, 0, 0, 0,0183_murofort.png
+ 202, 0, 0, 0,0202_mmina2.png
+ 203, 0, 0, 0,0203_mmina1.png
+ 204, 0, 0, 0,0204_tmina1.png
+ 205, 0, 0, 0,0205_mmina3.png
+ 206, 0, 0, 95,0206_mineral1.png
+ 207, 1070, 0, 0,0207_fogon1.png
+ 208, 0, 0, 0,0208_montapasa.png
+ 210, 0, 0, 0,0210_arbolgig.png
+ 211, 0, 0, 0,0211_farol1.png
+ 212, 0, 0, 0,0212_monta1.png
+ 213, 0, 0, 0,0212_monta1.png
+ 214, 0, 0, 0,0212_monta1.png
+ 215, 0, 0, 0,0215_montanev.png
+ 216, 0, 0, 0,0216_roca2.png
+ 220, 0, 0, 0,0220_entrada.png
+ 221, 0, 0, 0,0221_balcon.png
+ 256, 0, 0, 0,0256_crystal.png 
+ 257, 0, 0, 0,0257_cofre.png
+ 258, 0, 0, 0,0258_cofre1.png
+ 259, 0, 0, 0,0259_cofre2.png
+ 260, 0, 0, 0,0260_firefly.png
+ 261, 0, 0, 0,0261_dagadispara.png
+ 262, 0, 0, 0,0262_arcodispara.png
+ 263, 0, 0, 0,0263_cofre.png
+ 264, 0, 0, 0,0264_cofre.png
+ 265, 0, 0, 0,0264_cofre.png
+ 277, 0, 0, 0,0277_jefesheet.png
+ 288, 0, 0, 0,0288_rojo.png
+ 289, 0, 0, 0,0289_dsouls.png
+ 290, 0, 0, 0,0290_dsouls.png
+ 300, 0, 0, 0,0300_arco.png
+ 301, 0, 0, 0,0301_mrayo.png
+ 302, 0, 0, 0,0302_mexpl.png
+ 303, 0, 0, 0,0303_goblon.png
+ 304, 0, 0, 0,0304_mexpl2.png
+ 305, 0, 0, 0,0305_spider1.png
+ 306, 0, 0, 0,0306_spiderb1.png
+ 307, 0, 0, 0,0307_scarmesi.png
+ 308, 0, 0, 0,0308_alacran.png
+ 309, 0, 0, 0,0309_canion.png
+310, 0, 0, 0,0310_flechador.png
+ 311, 0, 0, 0,0311_ssnow.png
+ 315, 0, 0, 0,0315_dagaarro.png
+ 316, 0, 0, 0,0316_mespinos.png
+ 317, 0, 0, 0,0317_flechavuela.png
+ 318, 0, 0, 0,0318_magia.png
+ 319, 0, 0, 0,0319_mgolem.png
+ 320, 0, 0, 0,0320_tela.png
+ 321, 0, 0, 0,0321_mrayo.png
+ 322, 0, 0, 0,0322_flecha.png
+ 325, 0, 0, 0,0325_serp1.png
+ 326, 0, 0, 0,0326_imp.png
+ 331, 0, 0, 0,0331_mexpl.png
+ 344, 0, 0, 0,0344_serpm.png
+ 345, 0, 0, 0,0345_goblon.png
+ 346, 0, 0, 0,0346_bandido2.png
+347, 0, 0, 0,0347_greenskull.png
+ 348, 0, 0, 0,0348_skeleton1.png
+ 349, 0, 0, 0,0349_bandido1.png
+ 350, 0, 0, 0,0350_guardia.png
+ 351, 0, 0, 0,0351_mercader.png
+ 352, 0, 0, 0,0352_mercader2.png
+ 353, 0, 0, 0,0353_resurr.png
+ 354, 0, 0, 0,0354_encr1.png
+ 355, 0, 0, 0,0355_bardo1.png
+ 356, 0, 0, 0,0356_alquimista1.png
+ 357, 0, 0, 0,0357_alquimista2.png
+ 358, 0, 0, 0,0358_dama.png
+ 359, 0, 0, 0,0359_mercader.png
+ 360, 0, 0, 0,0360_hombre.png
+ 361, 0, 0, 0,0361_rata.png
+362, 0, 0, 0,0362_mojon.png
+363, 0, 0, 0,0363_bkn.png
+ 364, 0, 0, 0,0364_torre.png
+ 365, 0, 0, 0,0365_arpia.png
+ 366, 0, 0, 0,0366_ciudadano.png
+ 367, 0, 0, 0,0367_dama.png
+368, 0, 0, 0,0368_bardo.png
+369, 0, 0, 0,0369_skull.png
+ 370, 0, 0, 0,0370_beholder.png
+ 374, 0, 0, 0,0374_kainoth.png 
+ 375, 0, 0, 0,0375_necrom.png
+ 376, 0, 0, 0,0376_monsdeer.png
+ 377, 0, 0, 0,0377_deerservant.png
+ 378, 0, 0, 0,0378_necrom.png
+397, 0, 0, 0,0397_piso.png
+398, 0, 0, 0,0398_lava.png
+ 399, 0, 0, 0,0399_piso1.png 
+ 404, 0, 0, 0,0404_magister1.png
+ 405, 0, 0, 0,0405_magister.png
+406, 0, 0, 0,0406_dragon1.png
+407, 0, 0, 0,0407_deer1.png
+408, 0, 0, 0,0408_pajaro.png
+409, 0, 0, 0,0409_luzmala.png
+410, 0, 0, 0,0410_luzmala.png
+ 420, 0, 0, 0,0420_dung1.png
+ 421, 0, 0, 0,0421_warorco.png
+ 422, 0, 0, 0,0422_shespell.png
+ 423, 0, 0, 0,0423_dung1.png
+ 424, 0, 0, 0,0424_bartender.png
+ 425, 0, 0, 0,0425_mercader.png
+ 426, 0, 0, 0,0426_gov.png
+ 427, 0, 0, 0,0427_gov.png
+ 428, 0, 0, 0,0428_gov.png
+ 429, 0, 0, 0,0429_gov.png
+ 430, 0, 0, 0,0430_gov.png
+ 431, 0, 0, 0,0431_mago.png
+ 495, 0, 0, 0,0495_candado.png
+ 496, 0, 0, 0,0496_candado.png
+ 498, 0, 0, 0,0498_selchar.png
+499, 0, 0, 0,0499_config.png
+ 505, 0, 0, 0,0005_playan.png
+ 506, 0, 0, 0,0506_nieve1.png
+ 507, 0, 0, 0,0507_nieve2.png
+ 508, 0, 0, 0,0508_nieve3.png
+509, 0, 0, 0,0509_nieve4.png
+510, 0, 0, 0,0510_nieve5.png
+511, 0, 0, 0,0511_nieve6.png
+512, 0, 0, 0,0512_nieve7.png
+523, 0, 0, 0,0524_nieve7.png
+524, 0, 0, 0,0524_nieve7.png
+526, 0, 0, 0,0526_suelo.png
+527, 0, 0, 0,0527_suelo.png
+528, 0, 0, 0,0528_suelo.png
+529, 0, 0, 0,0529_suelo.png
+530, 0, 0, 0,0530_suelo.png
+ 555, 0, 0, 0,0555_playa1.png
+ 556, 0, 0, 0,0556_desierto1.png
+ 557, 0, 0, 0,0557_desierto2.png
+ 558, 0, 0, 0,0558_desierto3.png
+ 559, 0, 0, 0,0559_desierto4.png
+ 560, 0, 0, 0,0560_desierto5.png
+ 561, 0, 0, 0,0561_desierto6.png
+ 562, 0, 0, 0,0562_desierto7.png
+ 563, 0, 0, 0,0563_desierto8.png
+ 564, 0, 0, 0,0564_desierto9.png
+ 759, 0, 0, 0,0759_torre.png
+ 760, 0, 0, 0,0760_monpuerta.png
+ 761, 0, 0, 0,0761_monpuerta.png
+763, 0, 0, 0,0763_tprojo.png
+764, 0, 0, 0,0764_tpverde.png
+765, 0, 0, 0,0765_tpazul.png
+766, 0, 0, 0,0766_tpvioleta.png
+767, 129, 0, 0,0767_puerta.png
+768, 764, 0, 0,0768_portalu.png
+769, 763, 0, 0,0769_portalu.png
+770, 765, 0, 0,0770_portalu.png
+ 771, 0, 0, 0,0771_cloaca.png
+ 772, 0, 0, 0,0772_cloacaup.png
+ 773, 0, 0, 0,0773_cuevain.png
+ 774, 0, 0, 0,0774_cuevaout.png
+775, 0, 0, 0,0775_puerta1.png
+776, 0, 0, 0,0776_dungeonin.png
+777, 0, 0, 0,0777_dungeonout.png
+778, 0, 0, 0,0778_puerta.png
+ 779, 0, 0, 0,0779_puertafort.png
+780, 0, 0, 0,0780_tp1.png
+781, 782, 0, 0,0781_tpusr.png
+782, 0, 0, 0,0782_portalu.png
+783, 0, 0,0,0783_luz.png
+ 790, 0, 0, 0,0790_nubesn.png
+ 791, 0, 0, 0,0791_nubess.png
+ 792, 0, 0, 0,0792_nubese.png
+ 793, 0, 0, 0,0793_nubeso.png
+ 794, 0, 0, 0,0794_tnubesn.png
+ 795, 0, 0, 0,0795_tnubess.png
+ 796, 0, 0, 0,0796_tnubese.png
+ 797, 0, 0, 0,0797_tnubeso.png
+ 798, 0, 0, 0,0798_cielo.png
+ 799, 0, 0, 0,0799_cielo.png
+ 800, 0, 0, 0,0800_cielo.png
+ 801, 0, 0, 0,0801_cielo.png
+ 900, 0, 0, 0,0900_navio.png
+ 901, 0, 0, 94,0901_flor1.png
+902, 0, 0, 94,0902_arbusto.png
+903, 0, 0, 94,0903_arbusto.png
+904, 0, 0, 94,0904_arbusto.png
+ 930, 0, 0, 6,0930_arbol2.png
+ 931, 0, 0, 6,0931_arbol3.png
+ 932, 0, 0, 6,0932_arbol.png
+ 933, 0, 0, 0,0933_estalag.png
+ 934, 0, 0, 6,0934_arbolseco3.png
+ 935, 0, 0, 0,0935_roca.png
+936, 0, 0, 0,0936_tamarisco.png
+937, 0, 0, 0,0937_projonev.png
+938, 0, 0, 0,0938_pinonev.png
+939, 0, 0, 0,0939_hongogig.png
+940, 0, 0, 0,0940_hongogig.png
+941, 0, 0, 0,0941_barricada1.png
+942, 0, 0, 0,0942_pica.png
+943, 0, 0, 0,0943_pica.png
+944, 0, 0, 0,0944_arboldes.png
+945, 0, 0, 116,0945_crystal.png
+946, 0, 0, 116,0946_crystal.png
+957, 0, 0, 0,0957_cama1.png
+958, 0, 0, 0,0958_armario1.png
+959, 0, 0, 0,0959_mesa1.png
+960, 0, 0, 0,0960_usuaria.png
+961, 0, 0, 0,0961_usuario.png
+ 962, 0, 0, 0,0962_usuariael.png
+ 963, 0, 0, 0,0963_usuarioel.png
+ 964, 0, 0, 0,0964_usuariaen.png
+965, 0, 0, 0,0965_usuarioen.png
+966, 0, 0, 0,0966_fmujer.png
+967, 0, 0, 0,0967_fhombre.png
+ 989, 0, 0, 0,0989_enroto.png
+ 990, 0, 0, 0,0990_espada.png
+ 991, 0, 0, 0,0991_cast_port1.png
+ 992, 0, 0, 0,0992_puertamina.png
+ 993, 0, 0, 0,0993_estatua1.png
+ 994, 0, 0, 0,0994_carpa1.png
+ 995, 0, 0, 0,0995_estatua2.png
+ 996, 0, 0, 0,0996_navio.png
+ 997, 0, 0, 0,0997_hu_g_m.png
+ 998, 0, 0, 0,0998_en_g_m.png
+ 999, 0, 0, 0,0999_el_g_m.png
+1001, 0, 0, 0,1001_bazul.png
+1002, 0, 0, 0,1002_broja.png
+1003, 0, 0, 0,1003_bverde.png
+1004, 0, 0, 0,1004_bgris.png
+1010, 0, 0, 0,1010_muerto.png
+1011, 0, 0, 0,1011_yunque.png
+1012, 0, 0, 0,1012_mortero.png
+1050, 0, 0, 0,1050_mescudo.png
+1060, 0, 0, 0,1060_broq.png
+1061, 0, 0, 0,1061_broq.png
+1067, 0, 0, 0,1067_manov.png
+1068, 0, 0, 0,1068_mano.png
+1069, 0, 0, 0,1069_flama.png
+1070, 0, 0, 0,1070_flama.png

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Dungeon Crawler Móvil</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none; /* Evita gestos de scroll del navegador */
+        }
+        #miCanvas {
+            border: 2px solid #555;
+            /* Esto mantiene la relación de aspecto y escala al ancho del móvil */
+            width: 100vw;
+            height: auto;
+            image-rendering: pixelated; /* Mantiene los gráficos nítidos */
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="miCanvas" width="640" height="384"></canvas>
+
+    <script src="script.js"></script>
+</body>
+</html>

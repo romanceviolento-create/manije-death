@@ -1,0 +1,25 @@
+1,301,3,.02,2,5,"",0,0
+2,302,6,0,1,4,"",0,0
+4,315,6,0,5,23,"daga vuela",0,0
+3,304,6,0,3,4,"proy invernal",0,0
+5,318,3,0,5,0,"atake kaechinot",0,0
+6,316,5,.1,2,48,"espinos",0,0
+7,302,6,0,7,4,"proy EXPLOSIV",0,0
+8,322,1,0,5,112,"flecha magica",0,0
+9,317,1,0,5,0,"flecha vuela",0,0
+10,301,3,.02,1,5,"proy rayos",0,0
+11,321,3,.02,1,97,"rayo luz mala/orbe negro",0,0
+16,262,3,.4,1,0,"arco",72,20
+17,1067,3,.3,1,0,"manovacia",-40,50
+18,1068,3,.3,1,0,"mano",-40,50
+19,1069,12,.2,0,0,"tips",0,0
+20,1070,12,.2,0,0,"fuego",0,0
+21,319,5,.5,2,100,"m golem levanta piedras",0,0
+22,320,3,.04,2,0,"atake snowspider",0,0
+23,302,6,0,7,4,"proy imp",0,0
+31,331,6,0,1,42,"curacion",0,0
+32,331,6,0,1,42,"curacion",0,0
+33,331,6,0,1,42,"curacion",0,0
+40,1060,5,.5,1,115,"broquel",157,25
+41,1061,5,.5,1,115,"broquel",157,25
+0,CODIGOPNG,CUADROS,INTERVALO,TIPO,SONIDO,DETALLE, Xpos, Ypos
