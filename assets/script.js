@@ -11,8 +11,8 @@ async function iniciarJuego() {
         // Usamos "./" para referenciar archivos relativos a la carpeta donde está el index.html
         // Esto es obligatorio para que GitHub Pages los encuentre.
         const [respBin, respTxt] = await Promise.all([
-            fetch('mapas/mapa.bmp'), 
-            fetch('bmp/_recursosi.txt')	
+            fetch('assets/mapas/mapa.bmp'), 
+            fetch('assets/bmp/_recursosi.txt')	
 		
 	]);
         
@@ -31,7 +31,7 @@ async function iniciarJuego() {
         // Cargamos imágenes
         for (let id in diccionario) {
             let img = new Image();
-            img.src = 'bmp/' + diccionario[id]; // Ruta relativa corregida
+            img.src = 'assets/bmp/' + diccionario[id]; // Ruta relativa corregida
             img.onload = () => {
                 imagenesCargadas[id] = img;
                 dibujarMapa(); // Redibujar cuando cargue una imagen
