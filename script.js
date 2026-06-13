@@ -12,8 +12,9 @@ async function iniciarJuego() {
         // Esto es obligatorio para que GitHub Pages los encuentre.
         const [respBin, respTxt] = await Promise.all([
             fetch('./mapas/mapa.bmp'), 
-            fetch('./bmp/_recursosi.txt')
-        ]);
+            fetch('./bmp/_recursosi.txt')	
+		
+	]);
         
         if (!respBin.ok) throw new Error("No se pudo cargar el mapa (.bmp)");
         if (!respTxt.ok) throw new Error("No se pudo cargar el archivo de recursos (.txt)");
