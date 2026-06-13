@@ -13,14 +13,13 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
-            touch-action: none; /* Evita gestos de scroll del navegador */
+            touch-action: none; /* Mantuvimos tu configuración móvil */
         }
         #miCanvas {
             border: 2px solid #555;
-            /* Esto mantiene la relación de aspecto y escala al ancho del móvil */
             width: 100vw;
             height: auto;
-            image-rendering: pixelated; /* Mantiene los gráficos nítidos */
+            image-rendering: pixelated; /* Mantuvimos tu configuración de píxeles */
         }
     </style>
 </head>
@@ -28,6 +27,6 @@
 
     <canvas id="miCanvas" width="640" height="384"></canvas>
 
-    <script src="script.js"></script>
+    <script src="assets/script.js?v=2"></script>
 </body>
 </html>
