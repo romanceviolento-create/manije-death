@@ -3,8 +3,6 @@ let imagenesCargadas = {};
 let diccionario = {};
 let posX = 0;
 let posY = 0;
-let intervaloMovimiento = null;
-
 const offsetReal = 1078; 
 const MAPA_ANCHO = 1000;
 
@@ -15,8 +13,8 @@ async function iniciarJuego() {
             fetch('assets/bmp/recursosi.txt?v=1') 
         ]);
         
-        if (!respBin.ok) throw new Error("No se pudo cargar el mapa (.bmp)");
-        if (!respTxt.ok) throw new Error("No se pudo cargar el archivo de recursos (.txt)");
+        if (!respBin.ok) throw new Error("No se pudo cargar el mapa");
+        if (!respTxt.ok) throw new Error("No se pudo cargar el archivo de recursos");
         
         const arrayBuffer = await respBin.arrayBuffer();
         mapaBytes = new Uint8Array(arrayBuffer);
@@ -34,14 +32,11 @@ async function iniciarJuego() {
                 imagenesCargadas[id] = img;
                 dibujarMapa();
             };
-            img.onerror = () => console.error("Error al cargar imagen: " + img.src);
         }
 
         configurarControles();
         setTimeout(dibujarMapa, 500);
-    } catch (err) { 
-        console.error("Error al cargar:", err); 
-    }
+    } catch (err) { console.error(err); }
 }
 
 function dibujarMapa() {
@@ -49,11 +44,11 @@ function dibujarMapa() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     if (!mapaBytes) return;
 
     for (let y = 0; y < 12; y++) {
         for (let x = 0; x < 20; x++) {
+            // El cálculo original que funciona en tu Windows
             let index = offsetReal + ((posY + y) * MAPA_ANCHO + (posX + x));
             let tileId = mapaBytes[index] || 0;
             let img = imagenesCargadas[tileId];
@@ -66,56 +61,35 @@ function dibujarMapa() {
             }
         }
     }
-
-    // Visualizador de coordenadas
+    
+    // Visor de coordenadas para depurar en móvil
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
-    ctx.shadowColor = "black";
-    ctx.shadowBlur = 4;
-    ctx.fillText("X: " + posX + " Y: " + posY, 10, 30);
-    ctx.shadowBlur = 0;
+    ctx.fillText("X: " + posX + " Y: " + posY, 20, 40);
 }
 
 function configurarControles() {
     const canvas = document.getElementById('miCanvas');
     
-    const procesarToque = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        const touchX = touch.clientX - rect.left;
-        const touchY = touch.clientY - rect.top;
-        
-        const dx = touchX - (rect.width / 2);
-        const dy = touchY - (rect.height / 2);
-
-        // Zona muerta (10% del ancho)
-        if (Math.abs(dx) < rect.width * 0.1 && Math.abs(dy) < rect.height * 0.1) return;
-
-        if (Math.abs(dy) > Math.abs(dx)) {
-            if (dy < 0) posY = Math.max(0, posY - 1);
-            else posY += 1;
-        } else {
-            if (dx < 0) posX = Math.max(0, posX - 1);
-            else posX += 1;
-        }
-        dibujarMapa();
-    };
-
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        if (!intervaloMovimiento) {
-            procesarToque(e);
-            intervaloMovimiento = setInterval(() => procesarToque(e), 150);
-        }
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        // Coordenadas relativas al canvas escalado
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+
+        const midX = rect.width / 2;
+        const midY = rect.height / 2;
+
+        // Lógica de navegación que ya te funcionaba
+        if (y < midY && x > (rect.width/4) && x < (rect.width*0.75)) posY = Math.max(0, posY - 1);
+        else if (y > midY && x > (rect.width/4) && x < (rect.width*0.75)) posY += 1;
+        else if (x < midX && y > (rect.height/4) && y < (rect.height*0.75)) posX = Math.max(0, posX - 1);
+        else if (x > midX && y > (rect.height/4) && y < (rect.height*0.75)) posX += 1;
+        
+        dibujarMapa(); // Forzamos el redibujado
     }, {passive: false});
-
-    const limpiarMovimiento = () => {
-        clearInterval(intervaloMovimiento);
-        intervaloMovimiento = null;
-    };
-
-    canvas.addEventListener('touchend', limpiarMovimiento);
-    canvas.addEventListener('touchcancel', limpiarMovimiento);
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'w') posY = Math.max(0, posY - 1);
