@@ -12,7 +12,7 @@ async function iniciarJuego() {
         // Esto es obligatorio para que GitHub Pages los encuentre.
         const [respBin, respTxt] = await Promise.all([
             fetch('assets/mapas/mapa.bmp'), 
-            fetch('assets/bmp/_recursosi.txt')	
+            fetch('assets/bmp/_recursosi.txt?v=1')	
 		
 	]);
         
