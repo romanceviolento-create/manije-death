@@ -10,7 +10,6 @@ const MAPA_ANCHO = 1000;
 
 async function iniciarJuego() {
     try {
-        // Carga de archivos (recursosi.txt sin guion bajo para evitar bloqueo de Jekyll)
         const [respBin, respTxt] = await Promise.all([
             fetch('assets/mapas/mapa.bmp'), 
             fetch('assets/bmp/recursosi.txt?v=1') 
@@ -28,7 +27,6 @@ async function iniciarJuego() {
             if (p.length >= 5) diccionario[parseInt(p[0].trim())] = p[4].trim();
         });
 
-        // Cargamos imágenes
         for (let id in diccionario) {
             let img = new Image();
             img.src = 'assets/bmp/' + diccionario[id];
@@ -68,12 +66,19 @@ function dibujarMapa() {
             }
         }
     }
+
+    // Visualizador de coordenadas
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.shadowColor = "black";
+    ctx.shadowBlur = 4;
+    ctx.fillText("X: " + posX + " Y: " + posY, 10, 30);
+    ctx.shadowBlur = 0;
 }
 
 function configurarControles() {
     const canvas = document.getElementById('miCanvas');
     
-    // Lógica de movimiento para móvil
     const procesarToque = (e) => {
         const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
@@ -83,20 +88,19 @@ function configurarControles() {
         const dx = touchX - (rect.width / 2);
         const dy = touchY - (rect.height / 2);
 
-        // Zona muerta (10% del ancho) para evitar movimientos involuntarios al tocar el centro
+        // Zona muerta (10% del ancho)
         if (Math.abs(dx) < rect.width * 0.1 && Math.abs(dy) < rect.height * 0.1) return;
 
         if (Math.abs(dy) > Math.abs(dx)) {
-            if (dy < 0) posY = Math.max(0, posY - 1); // Arriba
-            else posY += 1; // Abajo
+            if (dy < 0) posY = Math.max(0, posY - 1);
+            else posY += 1;
         } else {
-            if (dx < 0) posX = Math.max(0, posX - 1); // Izquierda
-            else posX += 1; // Derecha
+            if (dx < 0) posX = Math.max(0, posX - 1);
+            else posX += 1;
         }
         dibujarMapa();
     };
 
-    // Eventos táctiles
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (!intervaloMovimiento) {
@@ -113,7 +117,6 @@ function configurarControles() {
     canvas.addEventListener('touchend', limpiarMovimiento);
     canvas.addEventListener('touchcancel', limpiarMovimiento);
 
-    // Controles de teclado para PC
     window.addEventListener('keydown', (e) => {
         if (e.key === 'w') posY = Math.max(0, posY - 1);
         if (e.key === 's') posY += 1;
@@ -123,5 +126,4 @@ function configurarControles() {
     });
 }
 
-// Iniciar
 iniciarJuego();
