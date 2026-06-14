@@ -3,18 +3,18 @@ let imagenesCargadas = {};
 let diccionario = {};
 let posX = 0;
 let posY = 0;
+let intervaloMovimiento = null;
+
 const offsetReal = 1078; 
 const MAPA_ANCHO = 1000;
 
 async function iniciarJuego() {
     try {
-        // Usamos "./" para referenciar archivos relativos a la carpeta donde está el index.html
-        // Esto es obligatorio para que GitHub Pages los encuentre.
+        // Carga de archivos (recursosi.txt sin guion bajo para evitar bloqueo de Jekyll)
         const [respBin, respTxt] = await Promise.all([
             fetch('assets/mapas/mapa.bmp'), 
-            fetch('assets/bmp/recursosi.txt?v=1')	
-		
-	]);
+            fetch('assets/bmp/recursosi.txt?v=1') 
+        ]);
         
         if (!respBin.ok) throw new Error("No se pudo cargar el mapa (.bmp)");
         if (!respTxt.ok) throw new Error("No se pudo cargar el archivo de recursos (.txt)");
@@ -31,10 +31,10 @@ async function iniciarJuego() {
         // Cargamos imágenes
         for (let id in diccionario) {
             let img = new Image();
-            img.src = 'assets/bmp/' + diccionario[id]; // Ruta relativa corregida
+            img.src = 'assets/bmp/' + diccionario[id];
             img.onload = () => {
                 imagenesCargadas[id] = img;
-                dibujarMapa(); // Redibujar cuando cargue una imagen
+                dibujarMapa();
             };
             img.onerror = () => console.error("Error al cargar imagen: " + img.src);
         }
@@ -52,7 +52,7 @@ function dibujarMapa() {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!mapaBytes) return; // Si no cargó el mapa, no intentamos dibujar
+    if (!mapaBytes) return;
 
     for (let y = 0; y < 12; y++) {
         for (let x = 0; x < 20; x++) {
@@ -63,7 +63,7 @@ function dibujarMapa() {
             if (img) {
                 ctx.drawImage(img, x * 32, y * 32, 32, 32);
             } else {
-                ctx.fillStyle = "#111"; // Fondo negro si no hay imagen
+                ctx.fillStyle = "#111";
                 ctx.fillRect(x * 32, y * 32, 32, 32);
             }
         }
@@ -73,24 +73,47 @@ function dibujarMapa() {
 function configurarControles() {
     const canvas = document.getElementById('miCanvas');
     
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+    // Lógica de movimiento para móvil
+    const procesarToque = (e) => {
         const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-
-        const midX = rect.width / 2;
-        const midY = rect.height / 2;
-
-        if (y < midY && x > (rect.width/4) && x < (rect.width*0.75)) posY = Math.max(0, posY - 1);
-        else if (y > midY && x > (rect.width/4) && x < (rect.width*0.75)) posY += 1;
-        else if (x < midX && y > (rect.height/4) && y < (rect.height*0.75)) posX = Math.max(0, posX - 1);
-        else if (x > midX && y > (rect.height/4) && y < (rect.height*0.75)) posX += 1;
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
         
+        const dx = touchX - (rect.width / 2);
+        const dy = touchY - (rect.height / 2);
+
+        // Zona muerta (10% del ancho) para evitar movimientos involuntarios al tocar el centro
+        if (Math.abs(dx) < rect.width * 0.1 && Math.abs(dy) < rect.height * 0.1) return;
+
+        if (Math.abs(dy) > Math.abs(dx)) {
+            if (dy < 0) posY = Math.max(0, posY - 1); // Arriba
+            else posY += 1; // Abajo
+        } else {
+            if (dx < 0) posX = Math.max(0, posX - 1); // Izquierda
+            else posX += 1; // Derecha
+        }
         dibujarMapa();
+    };
+
+    // Eventos táctiles
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!intervaloMovimiento) {
+            procesarToque(e);
+            intervaloMovimiento = setInterval(() => procesarToque(e), 150);
+        }
     }, {passive: false});
 
+    const limpiarMovimiento = () => {
+        clearInterval(intervaloMovimiento);
+        intervaloMovimiento = null;
+    };
+
+    canvas.addEventListener('touchend', limpiarMovimiento);
+    canvas.addEventListener('touchcancel', limpiarMovimiento);
+
+    // Controles de teclado para PC
     window.addEventListener('keydown', (e) => {
         if (e.key === 'w') posY = Math.max(0, posY - 1);
         if (e.key === 's') posY += 1;
@@ -100,4 +123,5 @@ function configurarControles() {
     });
 }
 
+// Iniciar
 iniciarJuego();
