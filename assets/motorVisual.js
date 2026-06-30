@@ -1,20 +1,21 @@
-const canvas = document.createElement('canvas');
-canvas.width = 600;
-canvas.height = 600;
-document.body.appendChild(canvas);
+// motorVisual.js
+
+const canvas = document.getElementById('miCanvas');
 const ctx = canvas.getContext('2d');
 
-function dibujarEntorno() {
-    // Si todavía no se cargaron las imágenes, esperamos
-    if (Object.keys(imagenesCargadas).length === 0) {
-        requestAnimationFrame(dibujarEntorno);
+function render() {
+    // 1. Verificamos que los datos estén cargados
+    if (!mapaBytes || Object.keys(imagenesCargadas).length === 0) {
+        requestAnimationFrame(render);
         return;
     }
 
+    // 2. Limpiamos el canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const radio = 1; // Un radio de 1 es una vista de 3x3
-    const celdaSize = 200; // Tamaño de cada imagen en pantalla
+    // 3. Definimos vista de 3x3 celdas centrada en posX, posY
+    const radio = 1; 
+    const tamCelda = 128; // Ajustado para que 3 celdas entren en los 384px de alto
 
     for (let dy = -radio; dy <= radio; dy++) {
         for (let dx = -radio; dx <= radio; dx++) {
@@ -22,19 +23,24 @@ function dibujarEntorno() {
             let targetX = posX + dx;
             let targetY = posY + dy;
 
-            // Fórmula para sacar el índice del byte
+            // Fórmula para acceder a tu array de datos
             let byteIndex = offsetReal + (targetY * MAPA_ANCHO) + targetX;
             let id = mapaBytes[byteIndex];
 
-            // Si hay imagen para ese ID, la dibujamos
+            // Dibujamos la imagen correspondiente si existe
             if (imagenesCargadas[id]) {
-                let xPantalla = (dx + radio) * celdaSize;
-                let yPantalla = (dy + radio) * celdaSize;
-                ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, celdaSize, celdaSize);
+                // Centramos visualmente las 3x3 celdas
+                let xPantalla = (dx + radio) * tamCelda + (canvas.width/2 - 192);
+                let yPantalla = (dy + radio) * tamCelda;
+                
+                ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tamCelda, tamCelda);
             }
         }
     }
+
+    // Pedimos el siguiente frame
+    requestAnimationFrame(render);
 }
 
-// Arrancamos
-dibujarEntorno();
+// Empezamos el bucle
+render();
