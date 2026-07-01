@@ -1,18 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dungeon Crawler</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Dungeon Crawler Móvil</title>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        canvas { border: 1px solid #555; image-rendering: pixelated; }
+        body {
+            margin: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #miCanvas {
+            border: 2px solid #555;
+            width: 100vw;
+            height: auto;
+            image-rendering: pixelated;
+        }
     </style>
 </head>
 <body>
+
     <canvas id="miCanvas" width="640" height="384"></canvas>
 
-    <!-- Asegurate que estos nombres coincidan EXACTAMENTE con los nombres de tus archivos -->
-    <script src="script.js"></script>
-    <script src="motorVisual.js"></script>
+    <script src="assets/script.js?v=2"></script>
+    <script src="assets/motorVisual.js"></script>
 </body>
 </html>
