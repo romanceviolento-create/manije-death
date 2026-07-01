@@ -1,7 +1,4 @@
-// motorVisual.js
-
-const canvas = document.getElementById('miCanvas');
-const ctx = canvas.getContext('2d');
+// motorVisual.js (Lógica de Dungeon Crawler por Grilla)
 
 function render() {
     if (!mapaBytes || Object.keys(imagenesCargadas).length === 0) {
@@ -11,12 +8,9 @@ function render() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // --- LÓGICA DE PROYECCIÓN 3D ---
-    const radioX = 3; 
-    const prof = 5; 
-
-    for (let dy = 0; dy < prof; dy++) {
-        for (let dx = -radioX; dx <= radioX; dx++) {
+    // Dibujamos de mayor a menor profundidad (de atrás hacia adelante)
+    for (let dy = 4; dy >= 0; dy--) { 
+        for (let dx = -2; dx <= 2; dx++) {
             
             let targetX = Math.floor(posX + dx);
             let targetY = Math.floor(posY + dy);
@@ -26,19 +20,19 @@ function render() {
                 let id = mapaBytes[byteIndex];
 
                 if (id !== 0 && imagenesCargadas[id]) {
-                    // Cálculo de perspectiva
-                    let escala = 1 / (dy + 1); 
-                    let tamActual = 256 * escala; 
-                    let xPantalla = (dx * tamActual) + (canvas.width / 2) - (tamActual / 2);
-                    let yPantalla = (canvas.height / 2) - (tamActual / 2) + (dy * 20); 
+                    // CÁLCULO DE PROFUNDIDAD:
+                    // dy=4 es el horizonte (fondo), dy=0 es lo que tenés en frente
+                    let escala = 0.5 + (dy * 0.2); // Más chico cuanto más lejos
+                    let tamActual = 128 * escala;
+                    
+                    // La posición X e Y se comprimen hacia el centro del canvas (punto de fuga)
+                    let xPantalla = (canvas.width / 2) + (dx * tamActual) - (tamActual / 2);
+                    let yPantalla = (canvas.height / 2) - (tamActual / 2) + (dy * 20);
                     
                     ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tamActual, tamActual);
                 }
             }
         }
     }
-    
     requestAnimationFrame(render);
 }
-
-render();
