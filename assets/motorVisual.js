@@ -4,38 +4,35 @@ const canvas = document.getElementById('miCanvas');
 const ctx = canvas.getContext('2d');
 
 function render() {
-    // Verificación de seguridad de datos
-    if (!mapaBytes || typeof mapaBytes === 'undefined' || Object.keys(imagenesCargadas).length === 0) {
+    if (!mapaBytes || Object.keys(imagenesCargadas).length === 0) {
         requestAnimationFrame(render);
         return;
     }
 
-    // Limpieza de frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Configuración de vista (Ajustá el radio según tu necesidad de campo visual)
-    const radio = 4; 
-    const tamCelda = 64; 
+    // --- LÓGICA DE PROYECCIÓN 3D ---
+    const radioX = 3; 
+    const prof = 5; 
 
-    // Bucle de renderizado basado en coordenadas del jugador (posX, posY)
-    for (let dy = -radio; dy <= radio; dy++) {
-        for (let dx = -radio; dx <= radio; dx++) {
+    for (let dy = 0; dy < prof; dy++) {
+        for (let dx = -radioX; dx <= radioX; dx++) {
             
             let targetX = Math.floor(posX + dx);
             let targetY = Math.floor(posY + dy);
 
-            // Validar límites de lectura en mapaBytes
             if (targetX >= 0 && targetY >= 0 && targetX < MAPA_ANCHO) {
                 let byteIndex = offsetReal + (targetY * MAPA_ANCHO) + targetX;
                 let id = mapaBytes[byteIndex];
 
-                // Renderizar solo si el ID existe y tiene imagen asociada (evitamos ID 0)
                 if (id !== 0 && imagenesCargadas[id]) {
-                    let xPantalla = (dx + radio) * tamCelda;
-                    let yPantalla = (dy + radio) * tamCelda;
+                    // Cálculo de perspectiva
+                    let escala = 1 / (dy + 1); 
+                    let tamActual = 256 * escala; 
+                    let xPantalla = (dx * tamActual) + (canvas.width / 2) - (tamActual / 2);
+                    let yPantalla = (canvas.height / 2) - (tamActual / 2) + (dy * 20); 
                     
-                    // Dibujo directo sin escalar (plano, según solicitaste)
-                    ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tamCelda, tamCelda);
+                    ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tamActual, tamActual);
                 }
             }
         }
@@ -44,5 +41,4 @@ function render() {
     requestAnimationFrame(render);
 }
 
-// Inicialización del motor
 render();
