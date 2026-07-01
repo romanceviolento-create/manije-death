@@ -1,38 +1,48 @@
+// motorVisual.js
+
+const canvas = document.getElementById('miCanvas');
+const ctx = canvas.getContext('2d');
+
 function render() {
-    if (!mapaBytes || Object.keys(imagenesCargadas).length === 0) {
+    // Verificación de seguridad de datos
+    if (!mapaBytes || typeof mapaBytes === 'undefined' || Object.keys(imagenesCargadas).length === 0) {
         requestAnimationFrame(render);
         return;
     }
 
+    // Limpieza de frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Ajustamos la lógica de 3x3 para aplicar perspectiva
-    const radio = 1;
-    const baseTam = 128; 
+    // Configuración de vista (Ajustá el radio según tu necesidad de campo visual)
+    const radio = 4; 
+    const tamCelda = 64; 
 
+    // Bucle de renderizado basado en coordenadas del jugador (posX, posY)
     for (let dy = -radio; dy <= radio; dy++) {
-        // Cálculo de escala por profundidad (dy)
-        // dy = -1 (lejos), 0 (medio), 1 (cerca)
-        let escala = 1 - (dy * 0.3); // Ajustá 0.3 para más o menos efecto
-        let tamActual = baseTam * escala;
-
         for (let dx = -radio; dx <= radio; dx++) {
-            let targetX = posX + dx;
-            let targetY = posY + dy;
+            
+            let targetX = Math.floor(posX + dx);
+            let targetY = Math.floor(posY + dy);
 
-            let byteIndex = offsetReal + (targetY * MAPA_ANCHO) + targetX;
-            let id = mapaBytes[byteIndex];
+            // Validar límites de lectura en mapaBytes
+            if (targetX >= 0 && targetY >= 0 && targetX < MAPA_ANCHO) {
+                let byteIndex = offsetReal + (targetY * MAPA_ANCHO) + targetX;
+                let id = mapaBytes[byteIndex];
 
-            if (imagenesCargadas[id]) {
-                // Cálculo de posición con perspectiva
-                // El ancho se desplaza para simular la "diagonal"
-                let xPantalla = (dx * tamActual) + (canvas.width / 2 - tamActual / 2);
-                let yPantalla = (dy * (baseTam * 0.8)) + (canvas.height / 2 - tamActual / 2);
-                
-                ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tamActual, tamActual);
+                // Renderizar solo si el ID existe y tiene imagen asociada (evitamos ID 0)
+                if (id !== 0 && imagenesCargadas[id]) {
+                    let xPantalla = (dx + radio) * tamCelda;
+                    let yPantalla = (dy + radio) * tamCelda;
+                    
+                    // Dibujo directo sin escalar (plano, según solicitaste)
+                    ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tamCelda, tamCelda);
+                }
             }
         }
     }
-
+    
     requestAnimationFrame(render);
 }
+
+// Inicialización del motor
+render();
