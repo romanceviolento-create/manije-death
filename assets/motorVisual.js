@@ -3,51 +3,57 @@
 const canvas = document.getElementById('miCanvas');
 const ctx = canvas.getContext('2d');
 
-// Posición inicial del jugador
+// Variables de estado del jugador (ajustalas según tu inicio en 222, 222)
 let posX = 222;
 let posY = 222;
+let playerAngle = 0; // Ángulo inicial del jugador
+
+function castRay(x, y, angulo) {
+    let dist = 0;
+    let step = 0.05; // Precisión del rayo
+    let curX = x;
+    let curY = y;
+
+    // Avanzamos el rayo hasta chocar con algo
+    while (dist < 20) { // Distancia máxima de visión
+        curX += Math.cos(angulo) * step;
+        curY += Math.sin(angulo) * step;
+        dist += step;
+
+        let mapX = Math.floor(curX);
+        let mapY = Math.floor(curY);
+
+        // Si encontramos un muro (ID distinto de 0)
+        if (mapaBytes[offsetReal + (mapY * MAPA_ANCHO) + mapX] !== 0) {
+            return dist;
+        }
+    }
+    return 20; // Si no choca con nada
+}
 
 function render() {
-    if (!mapaBytes || Object.keys(imagenesCargadas).length === 0) {
-        requestAnimationFrame(render);
-        return;
-    }
+    if (!mapaBytes) { requestAnimationFrame(render); return; }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Ajustamos la profundidad: 'profundidad' controla qué tan lejos vemos
-    const profundidad = 10; 
+    let fov = Math.PI / 3; // Campo de visión
+    let numRays = canvas.width;
 
-    // Dibujamos de atrás hacia adelante (del horizonte al frente)
-    for (let d = profundidad; d >= 0; d--) {
-        // En cada paso de profundidad, recorremos el ancho de visión
-        for (let w = -d; w <= d; w++) {
-            
-            // Calculamos coordenadas en el mapa basadas en movimiento libre
-            let targetX = Math.floor(posX + w);
-            let targetY = Math.floor(posY + d);
+    for (let i = 0; i < numRays; i++) {
+        let angulo = (playerAngle - fov / 2) + (i / numRays) * fov;
+        let dist = castRay(posX, posY, angulo);
 
-            if (targetX >= 0 && targetY >= 0 && targetX < MAPA_ANCHO) {
-                let byteIndex = offsetReal + (targetY * MAPA_ANCHO) + targetX;
-                let id = mapaBytes[byteIndex];
+        // Corregir efecto ojo de pez
+        dist *= Math.cos(angulo - playerAngle);
 
-                if (id !== 0 && imagenesCargadas[id]) {
-                    // CÁLCULO DE PERSPECTIVA:
-                    // Cuanto más grande es 'd', más lejos está (más pequeño en el horizonte)
-                    let escala = Math.max(0.01, 1 / (d + 1)); 
-                    let tam = 256 * escala; // Tamaño base para los bloques
-                    
-                    // Ajustamos posición para que converja al centro
-                    let xPantalla = (canvas.width / 2) + (w * tam) - (tam / 2);
-                    let yPantalla = (canvas.height / 2) - (tam / 2) + (d * 5); 
-                    
-                    // Si d es grande (horizonte), el tamaño es minúsculo (3-4 píxeles)
-                    ctx.drawImage(imagenesCargadas[id], xPantalla, yPantalla, tam, tam);
-                }
-            }
-        }
+        // Calcular altura de la columna (distancia inversa)
+        let altura = canvas.height / (dist + 0.1);
+
+        // Dibujar columna
+        ctx.fillStyle = `rgb(0, ${Math.min(255, altura * 2)}, 0)`; // Color según distancia
+        ctx.fillRect(i, (canvas.height - altura) / 2, 1, altura);
     }
-    
+
     requestAnimationFrame(render);
 }
 
