@@ -2,26 +2,32 @@ const motorVisual = {
     dibujar: function(ctx, mapaBytes, posX, posY, imagenesCargadas) {
         const canvasW = ctx.canvas.width;
         const canvasH = ctx.canvas.height;
-
-        // Dibujamos de atrás hacia adelante para dar profundidad
-        for (let y = 11; y >= 0; y--) {
-            let escala = 0.5 + (y * 0.1); 
-            let ancho = 64 * escala;
-            let alto = 32 * escala;
+        
+        // Configuraciones de perspectiva
+        const filas = 8; // Cuántas filas hacia adelante queremos dibujar
+        const puntoFugaY = canvasH * 0.35; // Altura donde convergen las líneas
+        
+        for (let y = 0; y < filas; y++) {
+            // La escala va de 0.1 (lejos) a 1.0 (cerca)
+            let escala = (y + 1) / filas; 
+            let tileW = 128 * escala; 
+            let tileH = 64 * escala;
             
-            // Calculamos la posición para que converja al centro
-            let xOffset = (canvasW / 2) - (ancho / 2) + ((y - 6) * 50); 
-            let yOffset = (y * 30) + (canvasH / 3);
-
+            // Calculamos la posición X para que se estreche hacia el centro
+            let centroX = canvasW / 2;
+            let anchoTotalFila = (canvasW * 0.5) * escala;
+            let inicioX = centroX - (anchoTotalFila / 2);
+            
             for (let x = 0; x < 20; x++) {
                 let index = 1078 + ((posY + y) * 1000 + (posX + x));
                 let tileId = mapaBytes[index] || 0;
                 let img = imagenesCargadas[tileId];
 
-                let posX_pantalla = xOffset + (x * (ancho * 0.5));
-                
+                let posX_pantalla = inicioX + (x * (anchoTotalFila / 20));
+                let posY_pantalla = puntoFugaY + (y * (canvasH / (filas * 1.5)));
+
                 if (img) {
-                    ctx.drawImage(img, posX_pantalla, yOffset, ancho, alto);
+                    ctx.drawImage(img, posX_pantalla, posY_pantalla, tileW, tileH);
                 }
             }
         }
