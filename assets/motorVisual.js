@@ -1,60 +1,39 @@
 // motorVisual.js
 
-const canvas = document.getElementById('miCanvas');
-const ctx = canvas.getContext('2d');
-
-// Variables de estado del jugador (ajustalas según tu inicio en 222, 222)
-let posX = 222;
-let posY = 222;
-let playerAngle = 0; // Ángulo inicial del jugador
-
-function castRay(x, y, angulo) {
-    let dist = 0;
-    let step = 0.05; // Precisión del rayo
-    let curX = x;
-    let curY = y;
-
-    // Avanzamos el rayo hasta chocar con algo
-    while (dist < 20) { // Distancia máxima de visión
-        curX += Math.cos(angulo) * step;
-        curY += Math.sin(angulo) * step;
-        dist += step;
-
-        let mapX = Math.floor(curX);
-        let mapY = Math.floor(curY);
-
-        // Si encontramos un muro (ID distinto de 0)
-        if (mapaBytes[offsetReal + (mapY * MAPA_ANCHO) + mapX] !== 0) {
-            return dist;
+const motorVisual = {
+    // Definimos el mundo basado en tu mapaBytes
+    generarMundo: function(mapaBytes, ancho, alto) {
+        let segmentos = [];
+        for (let y = 0; y < alto; y++) {
+            for (let x = 0; x < ancho; x++) {
+                let index = offsetReal + (y * MAPA_ANCHO + x);
+                segmentos.push({
+                    world: { x: (x - ancho / 2) * 100, y: 0, z: (alto - y) * 100 },
+                    camera: { x: 0, y: 0, z: 0 },
+                    screen: { x: 0, y: 0, scale: 0 },
+                    tileId: mapaBytes[index]
+                });
+            }
         }
+        return segmentos;
+    },
+
+    dibujar: function(ctx, segmentos, camera, width, height) {
+        // Ordenamos por Z para que lo lejos se dibuje primero (Painter's Algorithm)
+        segmentos.sort((a, b) => b.camera.z - a.camera.z);
+
+        segmentos.forEach(p => {
+            // Proyección 3D usando tu clase Camera
+            camera.project(p, 0, false, width, height);
+
+            // Solo dibujamos si está frente a la cámara
+            if (p.screen.scale > 0) {
+                let img = imagenesCargadas[p.tileId];
+                if (img) {
+                    let size = 100 * p.screen.scale;
+                    ctx.drawImage(img, p.screen.x - size/2, p.screen.y - size/2, size, size);
+                }
+            }
+        });
     }
-    return 20; // Si no choca con nada
-}
-
-function render() {
-    if (!mapaBytes) { requestAnimationFrame(render); return; }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    let fov = Math.PI / 3; // Campo de visión
-    let numRays = canvas.width;
-
-    for (let i = 0; i < numRays; i++) {
-        let angulo = (playerAngle - fov / 2) + (i / numRays) * fov;
-        let dist = castRay(posX, posY, angulo);
-
-        // Corregir efecto ojo de pez
-        dist *= Math.cos(angulo - playerAngle);
-
-        // Calcular altura de la columna (distancia inversa)
-        let altura = canvas.height / (dist + 0.1);
-
-        // Dibujar columna
-        ctx.fillStyle = `rgb(0, ${Math.min(255, altura * 2)}, 0)`; // Color según distancia
-        ctx.fillRect(i, (canvas.height - altura) / 2, 1, altura);
-    }
-
-    requestAnimationFrame(render);
-}
-
-render();
+};
