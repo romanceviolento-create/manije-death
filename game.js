@@ -8,7 +8,7 @@ scene.background = new THREE.Color(0x000000);
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
 camera.position.set(0, 1, 5); 
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); 
+const ambientLight = new THREE.AmbientLight(0x404040, 1); 
 scene.add(ambientLight);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -37,7 +37,11 @@ document.body.appendChild(compass);
 
 function updateCompass() {
     const angle = (camera.rotation.y * (180 / Math.PI)) % 360;
-    let dir = (angle > -45 && angle <= 45) ? "NORTE" : (angle > 45 && angle <= 135) ? "OESTE" : (angle > 135 || angle <= -135) ? "SUR" : "ESTE";
+    let dir = "";
+    if (angle > -45 && angle <= 45) dir = "NORTE";
+    else if (angle > 45 && angle <= 135) dir = "OESTE";
+    else if (angle > 135 || angle <= -135) dir = "SUR";
+    else dir = "ESTE";
     compass.innerText = dir;
 }
 
@@ -82,7 +86,7 @@ function updateTerrain(zone) {
         ground.material.color.set(0xffffff);
     } else {
         ground.material.map = null;
-        ground.material.color.set(0x443322);
+        ground.material.color.set(0x443322); // Suelo de tierra
     }
     ground.material.needsUpdate = true;
 }
@@ -92,6 +96,7 @@ function generateHouseZone() {
     const wallGeo = new THREE.PlaneGeometry(4, 3);
     const wallMat = new THREE.MeshLambertMaterial({ color: 0xff0000, side: THREE.DoubleSide });
     for(let i=0; i<4; i++) {
+        // CORRECCIÓN: Definimos 'wall' aquí dentro
         const wall = new THREE.Mesh(wallGeo, wallMat);
         wall.position.set(i < 2 ? (i===0?2:-2) : 0, 1.5, i > 1 ? (i===2?28:32) : 30);
         if (i < 2) wall.rotation.y = Math.PI / 2;
@@ -100,7 +105,7 @@ function generateHouseZone() {
     houseGenerated = true;
 }
 
-// --- LÓGICA DE JUEGO (CONTROLES, ENEMIGOS, ROTACIÓN) ---
+// --- LÓGICA DE JUEGO ---
 const keys = {};
 window.addEventListener('keydown', (e) => keys[e.code] = true);
 window.addEventListener('keyup', (e) => keys[e.code] = false);
@@ -133,7 +138,6 @@ initJoystick('lookJoystick', (x, y, active) => { touchLook = {x, y}; isTouchingL
 function animate() {
     requestAnimationFrame(animate);
 
-    // Sistema de Zonas
     const zone = camera.position.z > 10 ? 1 : 0;
     if (window.lastZone !== zone) {
         updateTerrain(zone);
@@ -143,40 +147,10 @@ function animate() {
 
     ambientLight.intensity = 2.0; 
     fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
-    
-    // VISIBILIDAD DE OBJETOS
     scene.children.forEach(obj => { if(obj.userData.isInteractable) obj.visible = obj.position.distanceTo(camera.position) < 25; });
     
     updateCompass();
 
-    // MOVIMIENTO Y ROTACIÓN
     if (canMove) {
         let moved = false;
-        if (keys['KeyW'] || (isTouchingMove && touchMove.y < -0.3)) { camera.translateZ(-GRID_SIZE); moved = true; }
-        if (keys['KeyS'] || (isTouchingMove && touchMove.y > 0.3)) { camera.translateZ(GRID_SIZE); moved = true; }
-        if (keys['KeyA'] || (isTouchingMove && touchMove.x < -0.3)) { camera.translateX(-GRID_SIZE); moved = true; }
-        if (keys['KeyD'] || (isTouchingMove && touchMove.x > 0.3)) { camera.translateX(GRID_SIZE); moved = true; }
-        if (keys['KeyQ']) { camera.rotation.y += Math.PI / 4; moved = true; }
-        if (keys['KeyE']) { camera.rotation.y -= Math.PI / 4; moved = true; }
-        if (moved) { canMove = false; setTimeout(() => canMove = true, 250); }
-    }
-
-    if (isTouchingLook && canTurn) {
-        if (touchLook.x > 0.5) { camera.rotation.y -= Math.PI / 2; canTurn = false; setTimeout(() => canTurn = true, 500); }
-        else if (touchLook.x < -0.5) { camera.rotation.y += Math.PI / 2; canTurn = false; setTimeout(() => canTurn = true, 500); }
-    }
-
-    // ENEMIGOS
-    enemies.forEach((en, i) => {
-        en.userData.lastMove++;
-        if (en.userData.lastMove > 60) {
-            en.position.x += Math.sign(0 - en.position.x) * GRID_SIZE;
-            en.position.z += Math.sign(0 - en.position.z) * GRID_SIZE;
-            en.userData.lastMove = 0;
-        }
-        if(en.position.distanceTo(new THREE.Vector3(0,1,0)) < 1.5) { scene.remove(en); enemies.splice(i, 1); }
-    });
-
-    renderer.render(scene, camera);
-}
-animate();
+        if (keys['KeyW'] || (isTouching
