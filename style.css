@@ -5,7 +5,8 @@ body {
     overflow: hidden;
     width: 100vw !important; 
     height: 100vh !important; 	
-    background-color: black; 
+    background-color: black;
+    overscroll-behavior: none;
     touch-action: none; 
 }
 
