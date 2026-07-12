@@ -3,31 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Dungeon Crawler Móvil</title>
-    <style>
-        body {
-            margin: 0;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: none;
-        }
-        #miCanvas {
-            border: 2px solid #555;
-            width: 100vw;
-            height: auto;
-            image-rendering: pixelated;
-        }
-    </style>
+    <title>Bosque de Supervivencia</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="ui">
+        Oleada: <span id="waveCounter">0</span> | Enemigos: <span id="enemyCount">0</span>
+    </div>
 
-    <canvas id="miCanvas" width="640" height="384"></canvas>
+    <div id="moveJoystick" class="joystick-area"><div class="joystick-knob"></div></div>
+    <div id="lookJoystick" class="joystick-area"><div class="joystick-knob"></div></div>
 
-    <script src="assets/script.js?v=2"></script>
-    <script src="assets/motorVisual.js"></script>
+    <script type="module" src="game.js"></script>
 </body>
 </html>
