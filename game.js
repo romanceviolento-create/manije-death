@@ -89,6 +89,34 @@ function startNextWave() {
 }
 
 window.addEventListener('mousedown', () => { if(gameState === 'idle') startNextWave(); });
+function initJoystick(id, callback) {
+    const area = document.getElementById(id);
+    if (!area) return;
+    const knob = area.querySelector('.joystick-knob');
+
+    // Usamos {passive: false} para poder usar e.preventDefault()
+    area.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // IMPORTANTE: Esto evita que la pantalla haga scroll
+        const rect = area.getBoundingClientRect();
+        const touch = e.touches[0]; // Capturamos el dedo
+        
+        let x = (touch.clientX - rect.left) / rect.width * 2 - 1;
+        let y = (touch.clientY - rect.top) / rect.height * 2 - 1;
+        
+        // Limitar movimiento dentro del círculo
+        const dist = Math.sqrt(x*x + y*y);
+        if (dist > 1) { x /= dist; y /= dist; }
+        
+        knob.style.transform = `translate(-50%, -50%) translate(${x * 30}px, ${y * 30}px)`;
+        callback(x, y, true);
+    }, {passive: false});
+
+    area.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        knob.style.transform = `translate(-50%, -50%)`;
+        callback(0, 0, false);
+    }, {passive: false});
+}
 
 function animate() {
     requestAnimationFrame(animate);
