@@ -1,0 +1,6 @@
+body { margin: 0; overflow: hidden; background-color: black; touch-action: none; }
+#ui { position: absolute; top: 10px; left: 10px; color: white; font-family: monospace; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #555; z-index: 100; pointer-events: none;}
+.joystick-area { position: absolute; bottom: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; z-index: 50; }
+#moveJoystick { left: 30px; }
+#lookJoystick { right: 30px; }
+.joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
