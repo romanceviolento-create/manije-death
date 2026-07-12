@@ -2,13 +2,13 @@ import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
 // --- CONFIGURACIÓN BÁSICA ---
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x000000, 0.05); 
+scene.fog = new THREE.FogExp2(0x000000, 0.02); // Niebla mucho más suave para ver lejos
 scene.background = new THREE.Color(0x000000);
 
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 1, 5); 
 
-const ambientLight = new THREE.AmbientLight(0x404040, 1); 
+const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // LUZ FIJA AL MÁXIMO
 scene.add(ambientLight);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -37,11 +37,7 @@ document.body.appendChild(compass);
 
 function updateCompass() {
     const angle = (camera.rotation.y * (180 / Math.PI)) % 360;
-    let dir = "";
-    if (angle > -45 && angle <= 45) dir = "NORTE";
-    else if (angle > 45 && angle <= 135) dir = "OESTE";
-    else if (angle > 135 || angle <= -135) dir = "SUR";
-    else dir = "ESTE";
+    let dir = (angle > -45 && angle <= 45) ? "NORTE" : (angle > 45 && angle <= 135) ? "OESTE" : (angle > 135 || angle <= -135) ? "SUR" : "ESTE";
     compass.innerText = dir;
 }
 
@@ -49,7 +45,6 @@ function createBillboard(tex, scale = 2) {
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(scale, scale, 1);
-    sprite.userData.isInteractable = true; 
     return sprite;
 }
 
@@ -72,38 +67,18 @@ const campfireSprite = createBillboard(texFogata, 2);
 campfireSprite.position.set(0, 1, 0);
 scene.add(campfireSprite);
 
-for (let i = 0; i < 20; i++) {
-    const tree = createBillboard(texArbol, 15);
-    let x = (Math.random() - 0.5) * 40; let z = (Math.random() - 0.5) * 40;
-    if (Math.abs(x) > 5 || Math.abs(z) > 5) { tree.position.set(x, 7, z); scene.add(tree); }
-}
+// --- SEGUNDO TERRENO (Lo creamos de una vez) ---
+const ground2 = new THREE.Mesh(new THREE.PlaneGeometry(30, 30, 15, 15), new THREE.MeshLambertMaterial({ color: 0x443322 }));
+ground2.rotation.x = -Math.PI / 2;
+ground2.position.set(0, 0, 30);
+scene.add(ground2);
 
-// --- ZONAS Y CASA ---
-let houseGenerated = false;
-function updateTerrain(zone) {
-    if (zone === 0) {
-        ground.material.map = texPasto;
-        ground.material.color.set(0xffffff);
-    } else {
-        ground.material.map = null;
-        ground.material.color.set(0x443322); // Suelo de tierra
-    }
-    ground.material.needsUpdate = true;
-}
-
-function generateHouseZone() {
-    if (houseGenerated) return;
-    const wallGeo = new THREE.PlaneGeometry(4, 3);
-    const wallMat = new THREE.MeshLambertMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-    for(let i=0; i<4; i++) {
-        // CORRECCIÓN: Definimos 'wall' aquí dentro
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.set(i < 2 ? (i===0?2:-2) : 0, 1.5, i > 1 ? (i===2?28:32) : 30);
-        if (i < 2) wall.rotation.y = Math.PI / 2;
-        scene.add(wall);
-    }
-    houseGenerated = true;
-}
+// Casa simple roja frente a ti
+const houseGeo = new THREE.BoxGeometry(4, 3, 4);
+const houseMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+const house = new THREE.Mesh(houseGeo, houseMat);
+house.position.set(0, 1.5, 30);
+scene.add(house);
 
 // --- LÓGICA DE JUEGO ---
 const keys = {};
@@ -137,20 +112,24 @@ initJoystick('lookJoystick', (x, y, active) => { touchLook = {x, y}; isTouchingL
 
 function animate() {
     requestAnimationFrame(animate);
-
-    const zone = camera.position.z > 10 ? 1 : 0;
-    if (window.lastZone !== zone) {
-        updateTerrain(zone);
-        window.lastZone = zone;
-        if (zone === 1) generateHouseZone();
-    }
-
-    ambientLight.intensity = 2.0; 
-    fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
-    scene.children.forEach(obj => { if(obj.userData.isInteractable) obj.visible = obj.position.distanceTo(camera.position) < 25; });
     
     updateCompass();
+    fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
 
     if (canMove) {
         let moved = false;
-        if (keys['KeyW'] || (isTouching
+        if (keys['KeyW'] || (isTouchingMove && touchMove.y < -0.3)) { camera.translateZ(-GRID_SIZE); moved = true; }
+        if (keys['KeyS'] || (isTouchingMove && touchMove.y > 0.3)) { camera.translateZ(GRID_SIZE); moved = true; }
+        if (keys['KeyA'] || (isTouchingMove && touchMove.x < -0.3)) { camera.translateX(-GRID_SIZE); moved = true; }
+        if (keys['KeyD'] || (isTouchingMove && touchMove.x > 0.3)) { camera.translateX(GRID_SIZE); moved = true; }
+        if (moved) { canMove = false; setTimeout(() => canMove = true, 250); }
+    }
+
+    if (isTouchingLook && canTurn) {
+        if (touchLook.x > 0.5) { camera.rotation.y -= Math.PI / 2; canTurn = false; setTimeout(() => canTurn = true, 500); }
+        else if (touchLook.x < -0.5) { camera.rotation.y += Math.PI / 2; canTurn = false; setTimeout(() => canTurn = true, 500); }
+    }
+
+    renderer.render(scene, camera);
+}
+animate();
