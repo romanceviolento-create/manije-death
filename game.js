@@ -145,7 +145,7 @@ function animate() {
         if (zone === 1) generateHouseZone();
     }
 
-    ambientLight.intensity = (Math.sin(Date.now() * 0.0005) + 1) / 2;
+    ambientLight.intensity = 1.0; 
     fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
     scene.children.forEach(obj => { if(obj.userData.isInteractable) obj.visible = obj.position.distanceTo(camera.position) < 25; });
     
