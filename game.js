@@ -96,7 +96,7 @@ function generateHouseZone() {
     const wallMat = new THREE.MeshLambertMaterial({ color: 0x888888, side: THREE.DoubleSide });
     const wallGeo = new THREE.PlaneGeometry(4, 3);
     for(let i=0; i<4; i++) {
-        const wall = new THREE.Mesh(wallGeo, wallMat);
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0xff0000, side: THREE.DoubleSide });
         wall.position.set(i < 2 ? (i===0?2:-2) : 0, 1.5, i > 1 ? (i===2?28:32) : 30);
         if (i < 2) wall.rotation.y = Math.PI / 2;
         scene.add(wall);
@@ -138,14 +138,14 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Sistema de Zonas
-    const zone = camera.position.z > 15 ? 1 : 0;
+    const zone = camera.position.z > 10 ? 1 : 0;
     if (window.lastZone !== zone) {
         updateTerrain(zone);
         window.lastZone = zone;
         if (zone === 1) generateHouseZone();
     }
 
-    ambientLight.intensity = 1.0; 
+    ambientLight.intensity = 2.0; 
     fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
     scene.children.forEach(obj => { if(obj.userData.isInteractable) obj.visible = obj.position.distanceTo(camera.position) < 25; });
     
