@@ -22,8 +22,11 @@ let canMove = true;
 let gameState = 'idle', currentWave = 0, enemies = [];
 const spawnPoints = [{x: -10, z: -10}, {x: 10, z: -10}, {x: -10, z: 10}, {x: 10, z: 10}];
 
+// --- VARIABLES TÁCTILES ---
+let touchMove = {x: 0, y: 0};
+let isTouchingMove = false;
+
 function createBillboard(tex, scale = 2) {
-    // IMPORTANTE: SpriteMaterial es auto-iluminado (se ve en la oscuridad)
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(scale, scale, 1);
@@ -37,15 +40,13 @@ const texArpia = loader.load('assets/bmp/0365_arpia.png');
 const texFogata = loader.load('assets/bmp/0132_fgoblin.png');
 const texArbol = loader.load('assets/bmp/0144_arbol4.png');
 
-// Configuración de texturas
 [texPasto, texArpia, texFogata, texArbol].forEach(t => { 
     t.magFilter = THREE.NearestFilter; 
     t.minFilter = THREE.NearestFilter; 
 });
 
-// --- ESCENARIO (Ahora cargado después de la textura) ---
 texPasto.wrapS = texPasto.wrapT = THREE.RepeatWrapping;
-texPasto.repeat.set(2, 2); // Menos repeticiones = píxeles gigantes
+texPasto.repeat.set(2, 2); 
 
 const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(30, 30, 15, 15), 
@@ -58,18 +59,16 @@ const campfireSprite = createBillboard(texFogata, 2);
 campfireSprite.position.set(0, 1, 0);
 scene.add(campfireSprite);
 
-// Árboles
 for (let i = 0; i < 20; i++) {
-    const tree = createBillboard(texArbol, 15); // 6 es el tamaño base
-    let x = (Math.random() - 0.5) * 40; // Expandimos el mapa a 40
+    const tree = createBillboard(texArbol, 15);
+    let x = (Math.random() - 0.5) * 40;
     let z = (Math.random() - 0.5) * 40;
-    
-    // Si están lejos del centro, los ponemos
     if (Math.abs(x) > 5 || Math.abs(z) > 5) {
-        tree.position.set(x, 7, z); // Altura 2.5
+        tree.position.set(x, 7, z);
         scene.add(tree);
     }
 }
+
 // --- LÓGICA DE JUEGO ---
 const keys = {};
 window.addEventListener('keydown', (e) => keys[e.code] = true);
@@ -89,28 +88,22 @@ function startNextWave() {
 }
 
 window.addEventListener('mousedown', () => { if(gameState === 'idle') startNextWave(); });
+
 function initJoystick(id, callback) {
     const area = document.getElementById(id);
     if (!area) return;
     const knob = area.querySelector('.joystick-knob');
-
-    // Usamos {passive: false} para poder usar e.preventDefault()
     area.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // IMPORTANTE: Esto evita que la pantalla haga scroll
+        e.preventDefault();
         const rect = area.getBoundingClientRect();
-        const touch = e.touches[0]; // Capturamos el dedo
-        
+        const touch = e.touches[0];
         let x = (touch.clientX - rect.left) / rect.width * 2 - 1;
         let y = (touch.clientY - rect.top) / rect.height * 2 - 1;
-        
-        // Limitar movimiento dentro del círculo
         const dist = Math.sqrt(x*x + y*y);
         if (dist > 1) { x /= dist; y /= dist; }
-        
         knob.style.transform = `translate(-50%, -50%) translate(${x * 30}px, ${y * 30}px)`;
         callback(x, y, true);
     }, {passive: false});
-
     area.addEventListener('touchend', (e) => {
         e.preventDefault();
         knob.style.transform = `translate(-50%, -50%)`;
@@ -118,15 +111,18 @@ function initJoystick(id, callback) {
     }, {passive: false});
 }
 
+// Inicializar joystick
+initJoystick('moveJoystick', (x, y, active) => { touchMove = {x, y}; isTouchingMove = active; });
+
 function animate() {
     requestAnimationFrame(animate);
 
     if (canMove) {
         let moved = false;
-        if (keys['KeyW']) { camera.translateZ(-GRID_SIZE); moved = true; }
-        if (keys['KeyS']) { camera.translateZ(GRID_SIZE); moved = true; }
-        if (keys['KeyA']) { camera.translateX(-GRID_SIZE); moved = true; }
-        if (keys['KeyD']) { camera.translateX(GRID_SIZE); moved = true; }
+        if (keys['KeyW'] || (isTouchingMove && touchMove.y < -0.3)) { camera.translateZ(-GRID_SIZE); moved = true; }
+        if (keys['KeyS'] || (isTouchingMove && touchMove.y > 0.3)) { camera.translateZ(GRID_SIZE); moved = true; }
+        if (keys['KeyA'] || (isTouchingMove && touchMove.x < -0.3)) { camera.translateX(-GRID_SIZE); moved = true; }
+        if (keys['KeyD'] || (isTouchingMove && touchMove.x > 0.3)) { camera.translateX(GRID_SIZE); moved = true; }
         if (keys['KeyQ']) { camera.rotation.y += Math.PI / 4; moved = true; }
         if (keys['KeyE']) { camera.rotation.y -= Math.PI / 4; moved = true; }
 
