@@ -5,7 +5,8 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x000000, 0.18); 
 scene.background = new THREE.Color(0x000000);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
+// CAMBIO 1: Ajustado FOV a 50 para estilo retro más encuadrado
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
 camera.position.set(0, 1, 5); 
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -111,11 +112,13 @@ function initJoystick(id, callback) {
     }, {passive: false});
 }
 
-// Inicializar joystick
 initJoystick('moveJoystick', (x, y, active) => { touchMove = {x, y}; isTouchingMove = active; });
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // CAMBIO 2: Efecto Flicker (titileo) del fuego
+    fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
 
     if (canMove) {
         let moved = false;
