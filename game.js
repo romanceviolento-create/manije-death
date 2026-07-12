@@ -8,7 +8,7 @@ scene.background = new THREE.Color(0x000000);
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
 camera.position.set(0, 1, 5); 
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // Luz fuerte para ver todo
+const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); 
 scene.add(ambientLight);
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -23,6 +23,11 @@ scene.add(fireLight);
 const GRID_SIZE = 1;
 let canMove = true, canTurn = true;
 let gameState = 'idle', currentWave = 0, enemies = [];
+const spawnPoints = [{x: -10, z: -10}, {x: 10, z: -10}, {x: -10, z: 10}, {x: 10, z: 10}];
+
+// --- VARIABLES TÁCTILES ---
+let touchMove = {x: 0, y: 0}, touchLook = {x: 0, y: 0};
+let isTouchingMove = false, isTouchingLook = false;
 
 // --- BRÚJULA ---
 const compass = document.createElement('div');
@@ -47,10 +52,11 @@ function createBillboard(tex, scale = 2) {
 // --- CARGA DE TEXTURAS ---
 const loader = new THREE.TextureLoader();
 const texPasto = loader.load('assets/bmp/0006_pasto.png');
-const texArbol = loader.load('assets/bmp/0144_arbol4.png');
+const texArpia = loader.load('assets/bmp/0365_arpia.png');
 const texFogata = loader.load('assets/bmp/0132_fgoblin.png');
+const texArbol = loader.load('assets/bmp/0144_arbol4.png');
 
-[texPasto, texFogata, texArbol].forEach(t => { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; });
+[texPasto, texArpia, texFogata, texArbol].forEach(t => { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; });
 texPasto.wrapS = texPasto.wrapT = THREE.RepeatWrapping;
 texPasto.repeat.set(2, 2); 
 
@@ -58,60 +64,76 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30, 15, 15), new THREE
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-scene.add(createBillboard(texFogata, 2));
+const campfireSprite = createBillboard(texFogata, 2);
+campfireSprite.position.set(0, 1, 0);
+scene.add(campfireSprite);
+
+for (let i = 0; i < 20; i++) {
+    const tree = createBillboard(texArbol, 15);
+    let x = (Math.random() - 0.5) * 40; let z = (Math.random() - 0.5) * 40;
+    if (Math.abs(x) > 5 || Math.abs(z) > 5) { tree.position.set(x, 7, z); scene.add(tree); }
+}
 
 // --- ZONAS Y CASA ---
 let houseGenerated = false;
 function updateTerrain(zone) {
-    ground.material.color.set(zone === 0 ? 0xffffff : 0x886644); // Suelo tierra color marrón
+    if (zone === 0) {
+        ground.material.map = texPasto;
+        ground.material.color.set(0xffffff);
+    } else {
+        ground.material.map = null;
+        ground.material.color.set(0x443322);
+    }
     ground.material.needsUpdate = true;
 }
 
 function generateHouseZone() {
     if (houseGenerated) return;
-    const wallMat = new THREE.MeshLambertMaterial({ color: 0xff0000, side: THREE.DoubleSide });
     const wallGeo = new THREE.PlaneGeometry(4, 3);
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0xff0000, side: THREE.DoubleSide });
     for(let i=0; i<4; i++) {
         const wall = new THREE.Mesh(wallGeo, wallMat);
         wall.position.set(i < 2 ? (i===0?2:-2) : 0, 1.5, i > 1 ? (i===2?28:32) : 30);
         if (i < 2) wall.rotation.y = Math.PI / 2;
         scene.add(wall);
     }
-    // Luz extra en la casa para que se vea bien
-    const houseLight = new THREE.PointLight(0xffffff, 20, 20);
-    houseLight.position.set(0, 3, 30);
-    scene.add(houseLight);
     houseGenerated = true;
 }
 
-// --- LÓGICA DE JUEGO ---
+// --- LÓGICA DE JUEGO (CONTROLES, ENEMIGOS, ROTACIÓN) ---
 const keys = {};
 window.addEventListener('keydown', (e) => keys[e.code] = true);
 window.addEventListener('keyup', (e) => keys[e.code] = false);
-
-let touchMove = {x: 0, y: 0}, touchLook = {x: 0, y: 0};
-let isTouchingMove = false, isTouchingLook = false;
 
 function initJoystick(id, callback) {
     const area = document.getElementById(id);
     if (!area) return;
     const knob = area.querySelector('.joystick-knob');
     area.addEventListener('touchmove', (e) => {
+        e.preventDefault();
         const rect = area.getBoundingClientRect();
         const touch = e.touches[0];
         let x = (touch.clientX - rect.left) / rect.width * 2 - 1;
         let y = (touch.clientY - rect.top) / rect.height * 2 - 1;
-        knob.style.transform = `translate(-50%, -50%) translate(${Math.max(-30, Math.min(30, x*30))}px, ${Math.max(-30, Math.min(30, y*30))}px)`;
+        const dist = Math.sqrt(x*x + y*y);
+        if (dist > 1) { x /= dist; y /= dist; }
+        knob.style.transform = `translate(-50%, -50%) translate(${x * 30}px, ${y * 30}px)`;
         callback(x, y, true);
     }, {passive: false});
-    area.addEventListener('touchend', () => { knob.style.transform = `translate(-50%, -50%)`; callback(0, 0, false); }, {passive: false});
+    area.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        knob.style.transform = `translate(-50%, -50%)`;
+        callback(0, 0, false);
+    }, {passive: false});
 }
+
 initJoystick('moveJoystick', (x, y, active) => { touchMove = {x, y}; isTouchingMove = active; });
 initJoystick('lookJoystick', (x, y, active) => { touchLook = {x, y}; isTouchingLook = active; });
 
 function animate() {
     requestAnimationFrame(animate);
 
+    // Sistema de Zonas
     const zone = camera.position.z > 10 ? 1 : 0;
     if (window.lastZone !== zone) {
         updateTerrain(zone);
@@ -119,16 +141,42 @@ function animate() {
         if (zone === 1) generateHouseZone();
     }
 
+    ambientLight.intensity = 2.0; 
+    fireLight.intensity = 15 + (Math.random() - 0.5) * 5;
+    
+    // VISIBILIDAD DE OBJETOS
+    scene.children.forEach(obj => { if(obj.userData.isInteractable) obj.visible = obj.position.distanceTo(camera.position) < 25; });
+    
+    updateCompass();
+
+    // MOVIMIENTO Y ROTACIÓN
     if (canMove) {
         let moved = false;
         if (keys['KeyW'] || (isTouchingMove && touchMove.y < -0.3)) { camera.translateZ(-GRID_SIZE); moved = true; }
         if (keys['KeyS'] || (isTouchingMove && touchMove.y > 0.3)) { camera.translateZ(GRID_SIZE); moved = true; }
         if (keys['KeyA'] || (isTouchingMove && touchMove.x < -0.3)) { camera.translateX(-GRID_SIZE); moved = true; }
         if (keys['KeyD'] || (isTouchingMove && touchMove.x > 0.3)) { camera.translateX(GRID_SIZE); moved = true; }
+        if (keys['KeyQ']) { camera.rotation.y += Math.PI / 4; moved = true; }
+        if (keys['KeyE']) { camera.rotation.y -= Math.PI / 4; moved = true; }
         if (moved) { canMove = false; setTimeout(() => canMove = true, 250); }
     }
 
-    updateCompass();
+    if (isTouchingLook && canTurn) {
+        if (touchLook.x > 0.5) { camera.rotation.y -= Math.PI / 2; canTurn = false; setTimeout(() => canTurn = true, 500); }
+        else if (touchLook.x < -0.5) { camera.rotation.y += Math.PI / 2; canTurn = false; setTimeout(() => canTurn = true, 500); }
+    }
+
+    // ENEMIGOS
+    enemies.forEach((en, i) => {
+        en.userData.lastMove++;
+        if (en.userData.lastMove > 60) {
+            en.position.x += Math.sign(0 - en.position.x) * GRID_SIZE;
+            en.position.z += Math.sign(0 - en.position.z) * GRID_SIZE;
+            en.userData.lastMove = 0;
+        }
+        if(en.position.distanceTo(new THREE.Vector3(0,1,0)) < 1.5) { scene.remove(en); enemies.splice(i, 1); }
+    });
+
     renderer.render(scene, camera);
 }
 animate();
