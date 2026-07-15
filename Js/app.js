@@ -360,6 +360,7 @@ document.addEventListener('mousemove', (e) => {
     }
 });
 
+
 // --- CONTROL TÁCTIL (Móvil) ---
 window.addEventListener('touchstart', (e) => {
     // 1. Evitamos el comportamiento por defecto si el toque es sobre el canvas
