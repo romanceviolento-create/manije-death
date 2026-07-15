@@ -1,3 +1,5 @@
+// --- 0. INITS (Configuración Inicial) ---
+
 const RETRO_WIDTH = 320;
 const RETRO_HEIGHT = 180;
 
@@ -10,6 +12,11 @@ camera.position.set(0, 1.6, 12); // Altura de los ojos (1.6m)
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(RETRO_WIDTH, RETRO_HEIGHT, false); // "false" evita que ThreeJS altere el style CSS del canvas
 document.body.appendChild(renderer.domElement);
+
+// --- 1. CORE (Motor y Gestión de Estado) ---
+let isTouching = false;
+let lastTouchX = 0;
+let lastTouchY = 0
 
 // Metemos el canvas dentro de nuestro contenedor de juego controlado por CSS
 const container = document.getElementById('game-container');
@@ -115,170 +122,66 @@ shieldGroup.add(shieldBoss);
 
 weaponRig.add(shieldGroup);
 
-// ============================================================================
-// --- 4. SISTEMA DEL GOBLIN RETRO (OPTIMIZADO) ---
-// ============================================================================
+// --- 4. SISTEMA DEL GOBLIN ---
 
-// --- VARIABLES GLOBALES DEL GOBLIN ---
+// Materiales del Goblin
+const goblinSkinMat = new THREE.MeshLambertMaterial({ color: 0x4a7c59 }); // Verde monstruo
+const goblinClothMat = new THREE.MeshLambertMaterial({ color: 0x5c4033 }); // Trapo marrón
+const goblinRedEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Ojos rojos brillantes
+
 let activeGoblin = null; 
+const SPAWN_INTERVAL = 60000; // 60000 ms = 1 minuto (bájalo a 5000 para pruebas rápidas)
 let lastSpawnTime = 0;
-const SPAWN_INTERVAL = 5000; // 5000 ms = 5 segundos para pruebas rápidas (puedes subirlo a 60000 después)
 
-// --- MATERIALES REUTILIZABLES ---
-const goblinSkin    = new THREE.MeshLambertMaterial({ color: 0x7fa963 }); // Verde claro vivo
-const leatherVest   = new THREE.MeshLambertMaterial({ color: 0x5c4238 }); // Chaleco marrón oscuro
-const pantsColor    = new THREE.MeshLambertMaterial({ color: 0x3e453c }); // Pantalón gris/verde oscuro
-const boneColor     = new THREE.MeshLambertMaterial({ color: 0xdfd8c8 }); // Punta de lanza
-const woodColor     = new THREE.MeshLambertMaterial({ color: 0x7d5c41 }); // Madera de lanza y escudo
-const metalColor    = new THREE.MeshLambertMaterial({ color: 0x4a4a4a }); // Refuerzo de hierro simple
-const eyeMat        = new THREE.MeshBasicMaterial({ color: 0xffea6c });   // Ojos amarillos brillantes
-
-// --- GEOMETRÍAS REUTILIZABLES (MEMORIA OPTIMIZADA) ---
-const bodyGeo       = new THREE.BoxGeometry(0.5, 0.7, 0.35);
-const headGeo       = new THREE.BoxGeometry(0.4, 0.38, 0.38);
-const earGeo        = new THREE.BoxGeometry(0.25, 0.08, 0.08);
-const eyeGeo        = new THREE.BoxGeometry(0.07, 0.07, 0.07);
-
-// Piernas (Pivote en la parte superior para rotar desde la cadera)
-const legGeo        = new THREE.BoxGeometry(0.16, 0.4, 0.16);
-legGeo.translate(0, -0.2, 0); 
-
-const bootGeo       = new THREE.BoxGeometry(0.2, 0.15, 0.28);
-
-// Brazos (Pivote en la parte superior para rotar desde el hombro)
-const armGeo        = new THREE.BoxGeometry(0.12, 0.5, 0.12);
-armGeo.translate(0, -0.25, 0);
-
-// Equipamiento
-const staffGeo      = new THREE.CylinderGeometry(0.03, 0.03, 1.8, 4);
-const tipGeo        = new THREE.ConeGeometry(0.08, 0.3, 4);
-const plateGeo      = new THREE.CylinderGeometry(0.24, 0.24, 0.04, 8);
-const centerBossGeo = new THREE.BoxGeometry(0.08, 0.08, 0.06);
-
-
-// --- FUNCIÓN DE MODELADO DEL GOBLIN RETRO ---
+// Función para modelar jerárquicamente un Goblin Low-Poly
 function createGoblin3D() {
     const goblinGroup = new THREE.Group();
-    const meshesToFlash = []; // Para el efecto de daño y parpadeo
 
-    // Función auxiliar para activar sombras y añadir al array de daño
-    function setupMesh(mesh, addToFlash = true) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        if (addToFlash) {
-            meshesToFlash.push(mesh);
-        }
-    }
-
-    // 1. CUERPO
-    const body = new THREE.Mesh(bodyGeo, leatherVest);
-    body.position.y = 0.8;
-    setupMesh(body);
+    // Cuerpo / Torso
+    const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.4);
+    const body = new THREE.Mesh(bodyGeo, goblinClothMat);
+    body.position.y = 0.7;
     goblinGroup.add(body);
 
-    // 2. CABEZA Y ROSTRO
-    const head = new THREE.Mesh(headGeo, goblinSkin);
-    head.position.set(0, 1.25, 0);
-    setupMesh(head);
+    // Cabeza (Alargada y orejona)
+    const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    const head = new THREE.Mesh(headGeo, goblinSkinMat);
+    head.position.set(0, 1.2, 0);
     goblinGroup.add(head);
 
     // Oreja Izquierda
-    const earL = new THREE.Mesh(earGeo, goblinSkin);
-    earL.position.set(-0.3, 1.28, -0.05);
-    earL.rotation.set(0.1, -0.2, -0.3);
-    setupMesh(earL);
+    const earLGeo = new THREE.BoxGeometry(0.3, 0.1, 0.1);
+    const earL = new THREE.Mesh(earLGeo, goblinSkinMat);
+    earL.position.set(-0.3, 1.2, 0);
+    earL.rotation.z = -0.2;
     goblinGroup.add(earL);
 
     // Oreja Derecha
     const earR = earL.clone();
     earR.position.x = 0.3;
-    earR.rotation.set(0.1, 0.2, 0.3);
-    setupMesh(earR);
+    earR.rotation.z = 0.2;
     goblinGroup.add(earR);
 
-    // Ojos (No se meten al flash para que sigan viéndose amarillos en el daño)
-    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.1, 1.28, 0.18);
+    // Ojos Rojos
+    const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+    const eyeL = new THREE.Mesh(eyeGeo, goblinRedEyeMat);
+    eyeL.position.set(-0.1, 1.25, 0.18);
     const eyeR = eyeL.clone();
     eyeR.position.x = 0.1;
     goblinGroup.add(eyeL, eyeR);
 
-    // 3. PIERNAS Y BOTAS
-    // Pierna Izquierda
-    const legL = new THREE.Mesh(legGeo, pantsColor);
-    legL.position.set(-0.18, 0.55, 0); 
-    setupMesh(legL);
-    goblinGroup.add(legL);
-
-    // Pierna Derecha
+    // Extremidades inferiores (Piernas simples)
+    const legGeo = new THREE.BoxGeometry(0.18, 0.4, 0.18);
+    const legL = new THREE.Mesh(legGeo, goblinSkinMat);
+    legL.position.set(-0.2, 0.2, 0);
     const legR = legL.clone();
-    legR.position.x = 0.18;
-    setupMesh(legR);
-    goblinGroup.add(legR);
+    legR.position.x = 0.2;
+    goblinGroup.add(legL, legR);
 
-    // Botas
-    const bootL = new THREE.Mesh(bootGeo, leatherVest);
-    bootL.position.set(-0.18, 0.1, 0.04);
-    setupMesh(bootL);
-    goblinGroup.add(bootL);
-
-    const bootR = bootL.clone();
-    bootR.position.x = 0.18;
-    setupMesh(bootR);
-    goblinGroup.add(bootR);
-
-    // 4. BRAZOS
-    // Brazo Izquierdo
-    const armL = new THREE.Mesh(armGeo, goblinSkin);
-    armL.position.set(-0.32, 1.05, 0.1); 
-    armL.rotation.x = -0.3;
-    setupMesh(armL);
-    goblinGroup.add(armL);
-
-    // Brazo Derecho
-    const armR = new THREE.Mesh(armGeo, goblinSkin);
-    armR.position.set(0.32, 1.05, 0.1); 
-    armR.rotation.x = -0.5;
-    setupMesh(armR);
-    goblinGroup.add(armR);
-
-    // 5. EQUIPAMIENTO: LANZA RETRO
-    const spearGroup = new THREE.Group();
-    spearGroup.position.set(0.38, 0.8, 0.15);
-    spearGroup.rotation.x = -0.2;
-
-    const staff = new THREE.Mesh(staffGeo, woodColor);
-    setupMesh(staff);
-    spearGroup.add(staff);
-
-    const tip = new THREE.Mesh(tipGeo, boneColor);
-    tip.position.y = 0.9;
-    setupMesh(tip);
-    spearGroup.add(tip);
-
-    goblinGroup.add(spearGroup);
-
-    // 6. EQUIPAMIENTO: ESCUDO REDONDO
-    const shieldGroup = new THREE.Group();
-    shieldGroup.position.set(-0.45, 0.75, 0.25);
-    shieldGroup.rotation.y = 0.4;
-
-    const plate = new THREE.Mesh(plateGeo, woodColor);
-    plate.rotation.x = Math.PI / 2;
-    setupMesh(plate);
-    shieldGroup.add(plate);
-
-    const centerBoss = new THREE.Mesh(centerBossGeo, metalColor);
-    centerBoss.position.z = 0.02;
-    setupMesh(centerBoss);
-    shieldGroup.add(centerBoss);
-
-    goblinGroup.add(shieldGroup);
-
-    // Guardar estado en userData para que las lógicas de daño sigan funcionando intactas
+    // Guardar referencia de las partes para efectos visuales (como parpadear en rojo)
     goblinGroup.userData = {
         life: 3,
-        meshes: meshesToFlash,
+        meshes: [body, head, earL, earR, legL, legR],
         isHurt: false,
         hurtTimer: 0
     };
@@ -286,9 +189,8 @@ function createGoblin3D() {
     return goblinGroup;
 }
 
-// --- FUNCIÓN DE SPAWN ---
 function spawnGoblin() {
-    // Si ya hay uno vivo, salimos
+    // Si ya hay uno vivo, no spawneamos otro para mantener el duelo simple
     if (activeGoblin) return;
 
     activeGoblin = createGoblin3D();
@@ -296,7 +198,7 @@ function spawnGoblin() {
     // Aparece al fondo del pasillo (z = -15), en la oscuridad total de la neblina
     activeGoblin.position.set(0, 0, -15); 
     scene.add(activeGoblin);
-    console.log("¡Un nuevo goblin retro acecha desde la oscuridad!");
+    console.log("¡Un goblin acecha desde la oscuridad!");
 }
 
 
@@ -449,20 +351,52 @@ document.addEventListener('pointerlockchange', () => {
     }
 });
 
-// 3. MOVIMIENTO DE CÁMARA CON EL MOUSE
+// CONTROL MOUSE (PC)
 document.addEventListener('mousemove', (e) => {
-    if (document.pointerLockElement !== document.body) return;
+    // Si el puntero está bloqueado, usamos el movimiento nativo
+    if (document.pointerLockElement === document.body) {
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+    }
+});
 
-    yaw -= e.movementX * mouseSensitivity;
-    pitch -= e.movementY * mouseSensitivity;
+// --- CONTROL TÁCTIL (Móvil) ---
+window.addEventListener('touchstart', (e) => {
+    // 1. Evitamos el comportamiento por defecto si el toque es sobre el canvas
+    // 2. IMPORTANTE: Si el usuario toca un botón, no queremos mover la cámara
+    const target = e.target;
+    if (target.classList.contains('interactive') || target.closest('.interactive')) {
+        return; // Ignoramos si tocó un botón del HUD
+    }
 
-    // Bloqueo de ángulo vertical para no dar vuelta la cabeza
-    pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
+    // Solo activamos rotación si toca fuera de los botones
+    isTouching = true;
+    lastTouchX = e.touches[0].clientX;
+    lastTouchY = e.touches[0].clientY;
+}, { passive: false });
 
-    camera.rotation.set(0, 0, 0);
-    camera.rotation.y = yaw;
-    camera.rotation.x = pitch;
-    camera.order = "YXZ"; // Clave para mantener el horizonte estable al rotar
+window.addEventListener('touchmove', (e) => {
+    // Evitamos scroll en la página mientras jugamos
+    if (isTouching) {
+        e.preventDefault(); 
+        
+        const deltaX = e.touches[0].clientX - lastTouchX;
+        const deltaY = e.touches[0].clientY - lastTouchY;
+        
+        // Ajusta sensibilidad: 0.005 es más suave que 0.01 para dispositivos móviles
+        yaw -= deltaX * 0.005; 
+        pitch -= deltaY * 0.005;
+        
+        // Limitar la inclinación vertical para que no se dé la vuelta completa
+        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+        
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', () => { 
+    isTouching = false; 
 });
 
 // 4. CONTROLES DE COMBATE (RATÓN - CLIC IZQUIERDO Y DERECHO)
@@ -703,42 +637,37 @@ function animate() {
     const elapsedTime = clock.getElapsedTime();
 
     // ==========================================
-    // 1. CONTROL DEL JUGADOR Y MOVIMIENTO (PC)
-    // ==========================================
-    if (document.pointerLockElement === document.body) {
+   // 1. CONTROL DEL JUGADOR Y MOVIMIENTO (UNIFICADO)
+// ==========================================
 
-        // Interpolación (Lerp) de rotación rápida de cámara (Q / E)
-        yaw += (targetYaw - yaw) * ROTATION_SPEED * delta;
+// 1.1 ROTACIÓN (Calculada tanto por Mouse como por Touch)
+yaw += (targetYaw - yaw) * ROTATION_SPEED * delta;
+pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
 
-        // Aplicamos las rotaciones calculadas a la cámara
-        camera.rotation.set(0, 0, 0);
-        camera.rotation.y = yaw;
-        camera.rotation.x = pitch;
-        camera.order = "YXZ"; 
+camera.rotation.set(pitch, yaw, 0); 
+camera.order = "YXZ"; 
 
-        // Fricción suave para detenernos progresivamente al caminar
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
+// 1.2 MOVIMIENTO (Físicas, ahora siempre activas)
+// Fricción suave
+velocity.x -= velocity.x * 10.0 * delta;
+velocity.z -= velocity.z * 10.0 * delta;
 
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
-        direction.normalize();
+// Dirección según teclas
+direction.z = Number(moveForward) - Number(moveBackward);
+direction.x = Number(moveRight) - Number(moveLeft);
+direction.normalize();
 
-        const playerSpeed = 40.0; 
+const playerSpeed = 40.0;
+if (moveForward || moveBackward) velocity.z -= direction.z * playerSpeed * delta;
+if (moveLeft || moveRight) velocity.x -= direction.x * playerSpeed * delta;
 
-        if (moveForward || moveBackward) velocity.z -= direction.z * playerSpeed * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * playerSpeed * delta;
+// Desplazamiento relativo a la mirada (yaw)
+camera.position.x += (velocity.x * Math.cos(yaw) + velocity.z * Math.sin(yaw)) * delta;
+camera.position.z += (velocity.z * Math.cos(yaw) - velocity.x * Math.sin(yaw)) * delta;
 
-        // Desplazamiento relativo a la mirada del jugador (solo plano XZ)
-        const camRotation = yaw;
-        camera.position.x += (velocity.x * Math.cos(camRotation) + velocity.z * Math.sin(camRotation)) * delta;
-        camera.position.z += (velocity.z * Math.cos(camRotation) - velocity.x * Math.sin(camRotation)) * delta;
-
-        // Límites del mapa para no salirnos del suelo
-        camera.position.x = Math.max(-10, Math.min(10, camera.position.x));
-        camera.position.z = Math.max(-20, Math.min(25, camera.position.z));
-    }
-
+// Límites del mapa
+camera.position.x = Math.max(-10, Math.min(10, camera.position.x));
+camera.position.z = Math.max(-20, Math.min(25, camera.position.z));
     // ==========================================
     // 2. SISTEMA DE ILUMINACIÓN (Antorcha parpadeante)
     // ==========================================
@@ -805,50 +734,71 @@ function animate() {
     shieldGroup.rotation.y = THREE.MathUtils.lerp(0.4, 0.9, currentShieldDefense);
     shieldGroup.rotation.x = THREE.MathUtils.lerp(0.1, 0.2, currentShieldDefense);
 
- 
     // --- ANIMACIÓN ESPADA (Estocada clásica) ---
     if (attackTime >= 0) {
-        // 1. Guardamos el progreso anterior antes de actualizar el tiempo
+        attackTime += delta;
+        const progress = attackTime / ATTACK_DURATION;
+// --- ANIMACIÓN ESPADA (Estocada clásica) ---
+    if (attackTime >= 0) {
         const previousProgress = attackTime / ATTACK_DURATION;
-        
-        // 2. Avanzamos el tiempo de la animación
         attackTime += delta;
         const progress = attackTime / ATTACK_DURATION;
 
-        // 3. DETECCIÓN DE GOLPE: Justo cuando cruza el 30% (extensión máxima)
+        // DETECCIÓN DE GOLPE: Justo cuando la espada se extiende al máximo (30% de la animación)
         if (previousProgress < 0.3 && progress >= 0.3) {
             checkPlayerHit();
         }
 
-        // 4. Controlar el ciclo de la animación
         if (progress > 1.0) {
-            // Fin de la animación: Regresar por completo al reposo
+            // Fin de la animación, regresa al reposo
             attackTime = -1;
             swordGroup.position.set(0.35, -0.3, -0.6);
             swordGroup.rotation.set(0.2, -0.4, -0.2);
         } else {
-            // Interpolación de movimiento (Estocada)
+            // Fase de estocada rápida (0.0 a 0.3) y retorno lento (0.3 a 1.0)
             let zOffset, rotX, rotY;
             if (progress < 0.3) {
-                // Ida rápida hacia adelante (0.0 a 0.3)
-                const p = progress / 0.3; 
-                zOffset = THREE.MathUtils.lerp(-0.6, -0.9, p); 
-                rotX = THREE.MathUtils.lerp(0.2, -0.5, p);     
+                const p = progress / 0.3; // Escala de 0 a 1
+                zOffset = THREE.MathUtils.lerp(-0.6, -0.9, p); // Estira hacia adelante
+                rotX = THREE.MathUtils.lerp(0.2, -0.5, p);     // Apunta hacia abajo
                 rotY = THREE.MathUtils.lerp(-0.4, -0.1, p);
             } else {
-                // Retorno lento a la posición inicial (0.3 a 1.0)
-                const p = (progress - 0.3) / 0.7; 
-                zOffset = THREE.MathUtils.lerp(-0.9, -0.6, p); 
+                const p = (progress - 0.3) / 0.7; // Retorno lento
+                zOffset = THREE.MathUtils.lerp(-0.9, -0.6, p); // Regresa
                 rotX = THREE.MathUtils.lerp(-0.5, 0.2, p);
                 rotY = THREE.MathUtils.lerp(-0.1, -0.4, p);
             }
-            
-            // Aplicar la posición y rotación calculada a la espada
             swordGroup.position.set(0.35 - (progress * 0.15), -0.3 + (progress * 0.05), zOffset);
             swordGroup.rotation.set(rotX, rotY, -0.2);
         }
     } else {
-        // En reposo: La espada acompaña el vaivén (bobbing) del jugador al caminar
+        // En reposo, solo tiene el sutil vaivén (bobbing) si caminas
+        swordGroup.position.set(0.35 + bobbingX, -0.3 + bobbingY, -0.6);
+    }
+        if (progress > 1.0) {
+            // Fin de la animación
+            attackTime = -1;
+            swordGroup.position.set(0.35, -0.3, -0.6);
+            swordGroup.rotation.set(0.2, -0.4, -0.2);
+        } else {
+            // Fase de estocada rápida (0.0 a 0.3) y retorno lento (0.3 a 1.0)
+            let zOffset, rotX, rotY;
+            if (progress < 0.3) {
+                const p = progress / 0.3; // Escala a un rango entre 0 - 1
+                zOffset = THREE.MathUtils.lerp(-0.6, -0.9, p); // Lanza hacia adelante
+                rotX = THREE.MathUtils.lerp(0.2, -0.5, p);     // Inclina la punta abajo
+                rotY = THREE.MathUtils.lerp(-0.4, -0.1, p);
+            } else {
+                const p = (progress - 0.3) / 0.7; // Escala de retorno entre 0 - 1
+                zOffset = THREE.MathUtils.lerp(-0.9, -0.6, p); // Vuelve a su sitio
+                rotX = THREE.MathUtils.lerp(-0.5, 0.2, p);
+                rotY = THREE.MathUtils.lerp(-0.1, -0.4, p);
+            }
+            swordGroup.position.set(0.35 - (progress * 0.15), -0.3 + (progress * 0.05), zOffset);
+            swordGroup.rotation.set(rotX, rotY, -0.2);
+        }
+    } else {
+        // En reposo, solo tiene el sutil vaivén (bobbing) si estás caminando
         swordGroup.position.set(0.35 + bobbingX, -0.3 + bobbingY, -0.6);
     }
 
