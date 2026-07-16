@@ -28,6 +28,8 @@
     width: 100% !important;
     height: 100% !important;
     object-fit: contain; /* Mantiene la proporción pixelada sin estirar */
+	touch-action: none; /* Crucial para evitar que el navegador maneje el toque */
+    pointer-events: auto; /* Permite que el canvas reciba los eventos, pero no bloquea los de abajo */
 }
 
         /* --- CAPA DEL HUD (FLOTANTE SOBRE EL JUEGO) --- */
@@ -47,8 +49,10 @@
         }
 
         .interactive {
-            pointer-events: auto;
-        }
+    position: relative;
+    z-index: 10; /* Asegura que los botones estén por encima del canvas */
+    pointer-events: auto; /* Fuerza a que los botones reciban el toque */
+}
 
         /* --- 1. JOYSTICK VIRTUAL (Izquierda) --- */
         #joystick-container {

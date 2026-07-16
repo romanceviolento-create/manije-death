@@ -403,7 +403,7 @@ window.addEventListener('touchstart', (e) => {
         lastTouchX = e.touches[0].clientX;
         lastTouchY = e.touches[0].clientY;
     }
-}, { passive: false });
+}, { capture: true });
 
 window.addEventListener('touchmove', (e) => {
     if (isMobile && isTouching) {
@@ -421,7 +421,7 @@ window.addEventListener('touchmove', (e) => {
         lastTouchX = e.touches[0].clientX;
         lastTouchY = e.touches[0].clientY;
     }
-}, { passive: false });
+}, { capture: true });
 
 window.addEventListener('touchmove', (e) => {
     // Evitamos scroll en la página mientras jugamos
@@ -441,8 +441,7 @@ window.addEventListener('touchmove', (e) => {
         lastTouchX = e.touches[0].clientX;
         lastTouchY = e.touches[0].clientY;
     }
-}, { passive: false });
-
+}, { capture: true });
 window.addEventListener('touchend', () => { 
     isTouching = false; 
 });
@@ -599,12 +598,12 @@ if (btnEscudoEl) {
     btnEscudoEl.addEventListener('touchstart', (e) => {
         preventDefault(e);
         setShieldState(true);
-    }, { passive: false });
+    }, { capture: true });
 
     btnEscudoEl.addEventListener('touchend', (e) => {
         preventDefault(e);
         setShieldState(false);
-    }, { passive: false });
+    }, { capture: true });
 
     // Click para toggles de escritorio
     btnEscudoEl.addEventListener('click', (e) => {
