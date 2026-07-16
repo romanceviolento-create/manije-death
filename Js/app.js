@@ -341,23 +341,33 @@ window.addEventListener('keyup', (e) => {
 
 const instrucciones = document.getElementById('instrucciones');
 
-const iniciarJuego = (e) => {
+const iniciarJuego = async (e) => {
     if (e) e.preventDefault();
     
-    // Ocultar menú
+    // 1. Intentar solicitar permiso de sensores (requerido en iOS 13+ y algunos Android)
+    if (typeof DeviceOrientationEvent !== 'undefined' && 
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permissionState = await DeviceOrientationEvent.requestPermission();
+            if (permissionState !== 'granted') {
+                console.warn("Permiso de sensor denegado");
+                return;
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // 2. Ocultar menú e iniciar
     if (instrucciones) instrucciones.style.display = 'none';
 
-    // SOLO si es PC, bloqueamos el puntero
+    // 3. Bloqueo de pantalla (opcional en móvil, pero útil)
     if (!isMobile && document.body.requestPointerLock) {
         document.body.requestPointerLock();
     }
-
-    // Solicitar permisos de sensores (Android/iOS)
-    if (typeof DeviceOrientationEvent !== 'undefined' && 
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().catch(console.error);
-    }
-}; // <--- ¡Esta llave cierra la función iniciarJuego!
+    
+    // 4. Si el audio estuviera activado, este es el momento de iniciarlo (AudioContext)
+};
 
 // Eventos de inicio (Click o Tap)
 if (instrucciones) {
@@ -398,12 +408,14 @@ window.addEventListener('touchstart', (e) => {
 window.addEventListener('touchmove', (e) => {
     if (isMobile && isTouching) {
         e.preventDefault(); 
+        
         const deltaX = e.touches[0].clientX - lastTouchX;
         const deltaY = e.touches[0].clientY - lastTouchY;
         
         yaw -= deltaX * 0.005; 
         pitch -= deltaY * 0.005;
         
+        // Limitar pitch para evitar rotación infinita
         pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
         
         lastTouchX = e.touches[0].clientX;
