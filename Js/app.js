@@ -1,4 +1,8 @@
-// --- 0. INITS (Configuración Inicial) ---
+// ==========================================
+// ESTRUCTURA PRINCIPAL DEL JUEGO
+// ==========================================
+
+////////////////////////////////////////////////////////////////////////////////////////////// --- INITS ---
 
 const RETRO_WIDTH = 320;
 const RETRO_HEIGHT = 180;
@@ -13,14 +17,16 @@ const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(RETRO_WIDTH, RETRO_HEIGHT, false); // "false" evita que ThreeJS altere el style CSS del canvas
 document.body.appendChild(renderer.domElement);
 
-// --- 1. CORE (Motor y Gestión de Estado) ---
+// --- CORE ---
 let isTouching = false;
 let lastTouchX = 0;
-let lastTouchY = 0
+let lastTouchY = 0;
 
 // Metemos el canvas dentro de nuestro contenedor de juego controlado por CSS
 const container = document.getElementById('game-container');
 container.appendChild(renderer.domElement);
+
+////////////////////////////////////////////////////////////////////////////////////////////// --- MAPAS ---
 
 // --- 2. ILUMINACIÓN ---
 const ambientLight = new THREE.AmbientLight(0x1a1525, 1.2); // Luz de noche azulada
@@ -74,53 +80,8 @@ const torch = new THREE.Mesh(torchGeo, torchMaterial);
 torch.position.set(0, 3.2, -2);
 scene.add(torch);
 
-// --- 3.5. CREACIÓN DE ESPADA Y ESCUDO (Anclados a la Cámara) ---
 
-// Creamos un contenedor (Rig) que se moverá y rotará de forma idéntica a la cámara
-const weaponRig = new THREE.Group();
-scene.add(weaponRig);
-
-// ESPADA (Mano derecha)
-const swordGroup = new THREE.Group();
-swordGroup.position.set(0.35, -0.3, -0.6); // Posición inicial abajo a la derecha
-swordGroup.rotation.set(0.2, -0.4, -0.2);
-
-// Hoja de la espada (usando geometría de caja tipo muro)
-const bladeGeo = new THREE.BoxGeometry(0.04, 0.6, 0.015);
-const blade = new THREE.Mesh(bladeGeo, wallMaterial);
-blade.position.y = 0.3; // Desplaza el origen a la base para facilitar rotaciones
-swordGroup.add(blade);
-
-// Guarda/Cresta de la espada
-const guardGeo = new THREE.BoxGeometry(0.15, 0.03, 0.03);
-const guard = new THREE.Mesh(guardGeo, darkIronMaterial);
-guard.position.y = 0.015;
-swordGroup.add(guard);
-
-// Empuñadura
-const hiltGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.15, 4);
-const hilt = new THREE.Mesh(hiltGeo, darkIronMaterial);
-hilt.position.y = -0.075;
-swordGroup.add(hilt);
-
-weaponRig.add(swordGroup);
-
-// ESCUDO (Mano izquierda)
-const shieldGroup = new THREE.Group();
-shieldGroup.position.set(-0.35, -0.25, -0.5); // Posición inicial abajo a la izquierda
-shieldGroup.rotation.set(0.1, 0.4, 0.1);
-
-// Cuerpo del escudo
-const shieldPlateGeo = new THREE.BoxGeometry(0.22, 0.3, 0.02);
-const shieldPlate = new THREE.Mesh(shieldPlateGeo, wallMaterial);
-shieldGroup.add(shieldPlate);
-
-// Refuerzo central del escudo (hierro oscuro)
-const shieldBossGeo = new THREE.BoxGeometry(0.06, 0.32, 0.03);
-const shieldBoss = new THREE.Mesh(shieldBossGeo, darkIronMaterial);
-shieldGroup.add(shieldBoss);
-
-weaponRig.add(shieldGroup);
+///////////////////////////////////////////////////////////////////////////////////////////// --- ENTITIES ---
 
 // --- 4. SISTEMA DEL GOBLIN ---
 
@@ -202,9 +163,63 @@ function spawnGoblin() {
 }
 
 
-// ==========================================================
+
+/////////////////////////////////////////////////////////////////////////////////////////////// --- INVENTORY ---
+// --- 3.5. CREACIÓN DE ESPADA Y ESCUDO (Anclados a la Cámara) ---
+
+// Creamos un contenedor (Rig) que se moverá y rotará de forma idéntica a la cámara
+const weaponRig = new THREE.Group();
+scene.add(weaponRig);
+
+// ESPADA (Mano derecha)
+const swordGroup = new THREE.Group();
+swordGroup.position.set(0.35, -0.3, -0.6); // Posición inicial abajo a la derecha
+swordGroup.rotation.set(0.2, -0.4, -0.2);
+
+// Hoja de la espada (usando geometría de caja tipo muro)
+const bladeGeo = new THREE.BoxGeometry(0.04, 0.6, 0.015);
+const blade = new THREE.Mesh(bladeGeo, wallMaterial);
+blade.position.y = 0.3; // Desplaza el origen a la base para facilitar rotaciones
+swordGroup.add(blade);
+
+// Guarda/Cresta de la espada
+const guardGeo = new THREE.BoxGeometry(0.15, 0.03, 0.03);
+const guard = new THREE.Mesh(guardGeo, darkIronMaterial);
+guard.position.y = 0.015;
+swordGroup.add(guard);
+
+// Empuñadura
+const hiltGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.15, 4);
+const hilt = new THREE.Mesh(hiltGeo, darkIronMaterial);
+hilt.position.y = -0.075;
+swordGroup.add(hilt);
+
+weaponRig.add(swordGroup);
+
+// ESCUDO (Mano izquierda)
+const shieldGroup = new THREE.Group();
+shieldGroup.position.set(-0.35, -0.25, -0.5); // Posición inicial abajo a la izquierda
+shieldGroup.rotation.set(0.1, 0.4, 0.1);
+
+// Cuerpo del escudo
+const shieldPlateGeo = new THREE.BoxGeometry(0.22, 0.3, 0.02);
+const shieldPlate = new THREE.Mesh(shieldPlateGeo, wallMaterial);
+shieldGroup.add(shieldPlate);
+
+// Refuerzo central del escudo (hierro oscuro)
+const shieldBossGeo = new THREE.BoxGeometry(0.06, 0.32, 0.03);
+const shieldBoss = new THREE.Mesh(shieldBossGeo, darkIronMaterial);
+shieldGroup.add(shieldBoss);
+
+weaponRig.add(shieldGroup);
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////// --- COMBATE ---
+
+
 // --- 5. MECÁNICAS DE ATAQUE Y VARIABLES DE COMBATE (PC) ---
-// ==========================================================
+
 
 // DECLARACIÓN ÚNICA DE VARIABLES (Se definen aquí para todo el script)
 let isAttacking = false;
@@ -261,6 +276,7 @@ function damageGoblin() {
         }, 150);
     }
 }
+//////////////////////////////////////////////////////////////////////////////////////////////// --- MOVIMIENTO ---
 
 // --- 4. CONTROLES DE MOVIMIENTO ---
 let moveForward = false;
@@ -274,6 +290,11 @@ const direction = new THREE.Vector3();
 let yaw = 0;
 let pitch = 0;
 const mouseSensitivity = 0.002;
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+//let isTouching = false;
+//let lastTouchX = 0;
+//let lastTouchY = 0;
 
 // Variables para la rotación fija por teclado de 90 grados
 let targetYaw = 0; 
@@ -337,43 +358,76 @@ document.addEventListener('keyup', (e) => {
 // 2. CAPTURA DEL CURSOR (Pointer Lock API)
 const instrucciones = document.getElementById('instrucciones');
 
-if (instrucciones) {
-    instrucciones.addEventListener('click', () => {
+// Función que inicia el modo juego (oculta menú y bloquea puntero si es posible)
+const iniciarJuego = (e) => {
+    if (e) e.preventDefault();
+    
+    // Solo intentamos bloquear el puntero si estamos en escritorio
+    // Android no soporta pointerLock, así que ignoramos el error si falla
+    if (document.body.requestPointerLock) {
         document.body.requestPointerLock();
-    });
+    }
+    
+    if (instrucciones) instrucciones.style.display = 'none';
+};
+
+// Evento para mouse (PC)
+if (instrucciones) {
+    instrucciones.addEventListener('click', iniciarJuego);
 }
 
+// Evento para táctil (Móvil)
+if (instrucciones) {
+    instrucciones.addEventListener('touchstart', iniciarJuego, { passive: false });
+}
+
+// Escucha cuando el estado de bloqueo cambia
 document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement === document.body) {
         if (instrucciones) instrucciones.style.display = 'none';
     } else {
-        if (instrucciones) instrucciones.style.display = 'block';
+        // Solo mostramos el menú si no estamos en móvil (donde el cursor no existe)
+        if (instrucciones && !isMobile) {
+            instrucciones.style.display = 'block';
+        }
     }
 });
 
+
 // CONTROL MOUSE (PC)
 document.addEventListener('mousemove', (e) => {
-    // Si el puntero está bloqueado, usamos el movimiento nativo
-    if (document.pointerLockElement === document.body) {
+    // Solo si no es móvil y el puntero está bloqueado
+    if (!isMobile && document.pointerLockElement === document.body) {
         yaw -= e.movementX * 0.002;
         pitch -= e.movementY * 0.002;
     }
 });
 
-
 // --- CONTROL TÁCTIL (Móvil) ---
 window.addEventListener('touchstart', (e) => {
-    // 1. Evitamos el comportamiento por defecto si el toque es sobre el canvas
-    // 2. IMPORTANTE: Si el usuario toca un botón, no queremos mover la cámara
+    // Solo activamos si es dispositivo móvil y no toca un botón
     const target = e.target;
-    if (target.classList.contains('interactive') || target.closest('.interactive')) {
-        return; // Ignoramos si tocó un botón del HUD
+    if (isMobile && !target.closest('.interactive')) {
+        isTouching = true;
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
     }
+}, { passive: false });
 
-    // Solo activamos rotación si toca fuera de los botones
-    isTouching = true;
-    lastTouchX = e.touches[0].clientX;
-    lastTouchY = e.touches[0].clientY;
+window.addEventListener('touchmove', (e) => {
+    if (isMobile && isTouching) {
+        e.preventDefault(); 
+        const deltaX = e.touches[0].clientX - lastTouchX;
+        const deltaY = e.touches[0].clientY - lastTouchY;
+        
+        yaw -= deltaX * 0.005; 
+        pitch -= deltaY * 0.005;
+        
+        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+        
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
+    }
 }, { passive: false });
 
 window.addEventListener('touchmove', (e) => {
@@ -517,64 +571,11 @@ function setShieldState(active) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////// --- GUI ---
 // ==========================================
 // --- 6. ASIGNACIÓN DE EVENTOS DE BOTONES ---
 // ==========================================
 
-const btnAtaque = document.getElementById('btn-ataque');
-const btnEscudo = document.getElementById('btn-escudo');
-
-// BOTÓN DE ATAQUE (Círculo Grande)
-if (btnAtaque) {
-    btnAtaque.addEventListener('click', (e) => {
-        e.preventDefault();
-        triggerAtaque();
-    });
-    btnAtaque.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        triggerAtaque();
-    }, { passive: false });
-}
-
-// BOTÓN DE ESCUDO (Círculo Chico)
-if (btnEscudo) {
-    btnEscudo.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        setShieldState(true);
-    }, { passive: false });
-
-    btnEscudo.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        setShieldState(false);
-    }, { passive: false });
-
-    btnEscudo.addEventListener('click', (e) => {
-        e.preventDefault();
-        setShieldState(!shieldActive);
-    });
-}
-
-// BOTÓN DE ITEMS
-const btnItems = document.getElementById('btn-items');
-if (btnItems) {
-    const triggerItems = (e) => {
-        e.preventDefault();
-        const overlay = document.getElementById('heal-overlay');
-        if (overlay) {
-            overlay.classList.remove('flash-effect');
-            void overlay.offsetWidth; 
-            overlay.classList.add('flash-effect');
-        }
-    };
-    btnItems.addEventListener('click', triggerItems);
-    btnItems.addEventListener('touchstart', triggerItems, { passive: false });
-}
-
-// ==========================================
-// --- ANIMACIONES DE COMBATE Y CONTROLES ---
-// ==========================================
-
-// Obtener referencias a los elementos del DOM una sola vez (Definiciones limpias de duplicados)
 const containerEl = document.getElementById('game-container');
 const healOverlayEl = document.getElementById('heal-overlay');
 const shieldOverlayEl = document.getElementById('shield-overlay');
@@ -582,21 +583,62 @@ const btnAtaqueEl = document.getElementById('btn-ataque');
 const btnEscudoEl = document.getElementById('btn-escudo');
 const btnItemsEl = document.getElementById('btn-items');
 
-// 2. EVENT LISTENERS UNIFICADOS
+// Función de ayuda para prevenir ejecución doble
+const preventDefault = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+};
 
-// Botón de Ataque: Activa la sacudida de pantalla (CSS) e inicia la animación de la espada (3D)
+// BOTÓN DE ATAQUE
 if (btnAtaqueEl) {
-    btnAtaqueEl.addEventListener('click', () => {
-        // Efecto CSS de sacudida
+    const actionAtaque = (e) => {
+        preventDefault(e);
+        // Efecto CSS
         containerEl.classList.remove('shake-effect');
-        void containerEl.offsetWidth; // Truco de reflow para reiniciar la animación
-        containerEl.add('shake-effect');
+        void containerEl.offsetWidth; 
+        containerEl.classList.add('shake-effect'); // Corregido: faltaba .classList
 
-        // Lógica de animación 3D de la espada
-        if (attackTime < 0) {
-            attackTime = 0; 
-        }
+        // Lógica 3D
+        if (typeof triggerAtaque === 'function') triggerAtaque();
+        if (typeof attackTime !== 'undefined' && attackTime < 0) attackTime = 0;
+    };
+
+    btnAtaqueEl.addEventListener('click', actionAtaque);
+    btnAtaqueEl.addEventListener('touchstart', actionAtaque, { passive: false });
+}
+
+// BOTÓN DE ESCUDO
+if (btnEscudoEl) {
+    // Eventos táctiles para mantener presionado
+    btnEscudoEl.addEventListener('touchstart', (e) => {
+        preventDefault(e);
+        setShieldState(true);
+    }, { passive: false });
+
+    btnEscudoEl.addEventListener('touchend', (e) => {
+        preventDefault(e);
+        setShieldState(false);
+    }, { passive: false });
+
+    // Click para toggles de escritorio
+    btnEscudoEl.addEventListener('click', (e) => {
+        preventDefault(e);
+        setShieldState(!shieldActive);
     });
+}
+
+// BOTÓN DE ITEMS
+if (btnItemsEl) {
+    const actionItems = (e) => {
+        preventDefault(e);
+        if (healOverlayEl) {
+            healOverlayEl.classList.remove('flash-effect');
+            void healOverlayEl.offsetWidth; 
+            healOverlayEl.classList.add('flash-effect');
+        }
+    };
+    btnItemsEl.addEventListener('click', actionItems);
+    btnItemsEl.addEventListener('touchstart', actionItems, { passive: false });
 }
 
 // Botón de Escudo: Enciende el overlay azul (CSS), cambia el estilo del botón y activa la guardia (3D)
@@ -627,7 +669,8 @@ if (btnItemsEl) {
         healOverlayEl.classList.add('flash-effect');
     });
 }
-
+ /////////////////////////////////////////////////////////////////////////////////// --- MAIN --
+  
 // --- 5. BUCLE DE RENDERIZACIÓN UNIFICADO ---
 const clock = new THREE.Clock();
 
