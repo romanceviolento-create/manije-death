@@ -22,6 +22,8 @@ let isTouching = false;
 let lastTouchX = 0;
 let lastTouchY = 0;
 
+
+
 // Metemos el canvas dentro de nuestro contenedor de juego controlado por CSS
 const container = document.getElementById('game-container');
 container.appendChild(renderer.domElement);
@@ -80,8 +82,18 @@ const torch = new THREE.Mesh(torchGeo, torchMaterial);
 torch.position.set(0, 3.2, -2);
 scene.add(torch);
 
+let targetPitch = 0;
+// targetYaw = 0;
+
+window.addEventListener("deviceorientation", (event) => {
+    // Convertimos a radianes y ajustamos ejes
+    targetPitch = (event.beta || 0) * (Math.PI / 180);
+    targetYaw = (event.gamma || 0) * (Math.PI / 180);
+}, true); 
 
 ///////////////////////////////////////////////////////////////////////////////////////////// --- ENTITIES ---
+
+
 
 // --- 4. SISTEMA DEL GOBLIN ---
 
@@ -302,56 +314,26 @@ const ROTATION_SPEED = 10; // Velocidad de la transición de giro
 
 
 // Eventos de teclado
-document.addEventListener('keydown', (e) => {
-    if (document.pointerLockElement !== document.body) return;
 
+
+ // --- CORRECCIÓN DE EVENTOS DE TECLADO ---
+window.addEventListener('keydown', (e) => {
     switch (e.code) {
-        // Movimiento
-        case 'KeyW': 
-        case 'ArrowUp': 
-            moveForward = true; 
-            break;
-        case 'KeyS': 
-        case 'ArrowDown': 
-            moveBackward = true; 
-            break;
-        case 'KeyA': 
-        case 'ArrowLeft': 
-            moveLeft = true; 
-            break;
-        case 'KeyD': 
-        case 'ArrowRight': 
-            moveRight = true; 
-            break;
-        
-        // Rotación rápida de cámara (90 grados)
-        case 'KeyQ': 
-            targetYaw += Math.PI / 2; // +90 grados en radianes
-            break;
-        case 'KeyE': 
-            targetYaw -= Math.PI / 2; // -90 grados en radianes
-            break;
+        case 'KeyW': case 'ArrowUp': moveForward = true; break;
+        case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+        case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+        case 'KeyD': case 'ArrowRight': moveRight = true; break;
+        case 'KeyQ': targetYaw += Math.PI / 2; break;
+        case 'KeyE': targetYaw -= Math.PI / 2; break;
     }
 });
 
-document.addEventListener('keyup', (e) => {
+window.addEventListener('keyup', (e) => {
     switch (e.code) {
-        case 'KeyW': 
-        case 'ArrowUp': 
-            moveForward = false; 
-            break;
-        case 'KeyS': 
-        case 'ArrowDown': 
-            moveBackward = false; 
-            break;
-        case 'KeyA': 
-        case 'ArrowLeft': 
-            moveLeft = false; 
-            break;
-        case 'KeyD': 
-        case 'ArrowRight': 
-            moveRight = false; 
-            break;
+        case 'KeyW': case 'ArrowUp': moveForward = false; break;
+        case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+        case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+        case 'KeyD': case 'ArrowRight': moveRight = false; break;
     }
 });
 
@@ -362,13 +344,21 @@ const instrucciones = document.getElementById('instrucciones');
 const iniciarJuego = (e) => {
     if (e) e.preventDefault();
     
-    // Solo intentamos bloquear el puntero si estamos en escritorio
-    // Android no soporta pointerLock, así que ignoramos el error si falla
-    if (document.body.requestPointerLock) {
-        document.body.requestPointerLock();
-    }
-    
+    // 1. Ocultar instrucciones
     if (instrucciones) instrucciones.style.display = 'none';
+
+    // 2. Solicitar permiso de sensores (Específico para iOS y Android moderno)
+    if (typeof DeviceOrientationEvent !== 'undefined' && 
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        
+        DeviceOrientationEvent.requestPermission()
+            .then(response => {
+                if (response === 'granted') {
+                    console.log("Permiso de sensores concedido");
+                }
+            })
+            .catch(console.error);
+    }
 };
 
 // Evento para mouse (PC)
@@ -382,16 +372,7 @@ if (instrucciones) {
 }
 
 // Escucha cuando el estado de bloqueo cambia
-document.addEventListener('pointerlockchange', () => {
-    if (document.pointerLockElement === document.body) {
-        if (instrucciones) instrucciones.style.display = 'none';
-    } else {
-        // Solo mostramos el menú si no estamos en móvil (donde el cursor no existe)
-        if (instrucciones && !isMobile) {
-            instrucciones.style.display = 'block';
-        }
-    }
-});
+
 
 
 // CONTROL MOUSE (PC)
@@ -454,33 +435,26 @@ window.addEventListener('touchend', () => {
     isTouching = false; 
 });
 
-// 4. CONTROLES DE COMBATE (RATÓN - CLIC IZQUIERDO Y DERECHO)
+// --- 4. CONTROLES DE COMBATE (RATÓN) ---
 
-// Desactivar el menú contextual del clic derecho para que no moleste al defenderse
+// Bloqueo total del menú contextual en el documento
+// Esto impide que salga el menú del navegador al hacer clic derecho
 document.addEventListener('contextmenu', (e) => {
-    if (document.pointerLockElement === document.body) {
-        e.preventDefault();
-    }
-});
+    e.preventDefault();
+}, false);
 
 // Detectar clics del mouse (Atacar y Defender)
 document.addEventListener('mousedown', (e) => {
-    if (document.pointerLockElement !== document.body) return;
-
+    // e.button 0 = Click Izquierdo, 2 = Click Derecho
     if (e.button === 0) {
-        // Clic Izquierdo -> ATACAR
         triggerAtaque();
     } else if (e.button === 2) {
-        // Clic Derecho -> DEFENDER (Activar escudo)
         setShieldState(true);
     }
 });
 
 document.addEventListener('mouseup', (e) => {
-    if (document.pointerLockElement !== document.body) return;
-
     if (e.button === 2) {
-        // Soltar Clic Derecho -> BAJAR ESCUDO
         setShieldState(false);
     }
 });
@@ -676,52 +650,37 @@ const clock = new THREE.Clock();
 
 function animate() {
     requestAnimationFrame(animate);
-
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // ==========================================
-   // 1. CONTROL DEL JUGADOR Y MOVIMIENTO (UNIFICADO)
-// ==========================================
+    // 1. ROTACIÓN GIROSCOPIO (Suavizada)
+    pitch += (targetPitch - pitch) * 0.1;
+    yaw += (targetYaw - yaw) * 0.1;
+    camera.rotation.set(pitch, yaw, 0);
+    camera.rotation.order = "YXZ";
 
-// 1.1 ROTACIÓN (Calculada tanto por Mouse como por Touch)
-yaw += (targetYaw - yaw) * ROTATION_SPEED * delta;
-pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
+    // 1.2 MOVIMIENTO (Físicas)
+    velocity.x -= velocity.x * 10.0 * delta;
+    velocity.z -= velocity.z * 10.0 * delta;
 
-camera.rotation.set(pitch, yaw, 0); 
-camera.order = "YXZ"; 
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize();
 
-// 1.2 MOVIMIENTO (Físicas, ahora siempre activas)
-// Fricción suave
-velocity.x -= velocity.x * 10.0 * delta;
-velocity.z -= velocity.z * 10.0 * delta;
+    const playerSpeed = 40.0;
+    if (moveForward || moveBackward) velocity.z -= direction.z * playerSpeed * delta;
+    if (moveLeft || moveRight) velocity.x -= direction.x * playerSpeed * delta;
 
-// Dirección según teclas
-direction.z = Number(moveForward) - Number(moveBackward);
-direction.x = Number(moveRight) - Number(moveLeft);
-direction.normalize();
+    camera.position.x += (velocity.x * Math.cos(yaw) + velocity.z * Math.sin(yaw)) * delta;
+    camera.position.z += (velocity.z * Math.cos(yaw) - velocity.x * Math.sin(yaw)) * delta;
 
-const playerSpeed = 40.0;
-if (moveForward || moveBackward) velocity.z -= direction.z * playerSpeed * delta;
-if (moveLeft || moveRight) velocity.x -= direction.x * playerSpeed * delta;
+    camera.position.x = Math.max(-10, Math.min(10, camera.position.x));
+    camera.position.z = Math.max(-20, Math.min(25, camera.position.z));
 
-// Desplazamiento relativo a la mirada (yaw)
-camera.position.x += (velocity.x * Math.cos(yaw) + velocity.z * Math.sin(yaw)) * delta;
-camera.position.z += (velocity.z * Math.cos(yaw) - velocity.x * Math.sin(yaw)) * delta;
-
-// Límites del mapa
-camera.position.x = Math.max(-10, Math.min(10, camera.position.x));
-camera.position.z = Math.max(-20, Math.min(25, camera.position.z));
-    // ==========================================
-    // 2. SISTEMA DE ILUMINACIÓN (Antorcha parpadeante)
-    // ==========================================
+    // 2. ILUMINACIÓN
     torchLight.intensity = 2.5 + Math.sin(elapsedTime * 10) * 0.4 + Math.random() * 0.1;
 
-    // ==========================================
-    // 3. SPAWNER Y COMPORTAMIENTO DEL GOBLIN (IA / Daño)
-    // ==========================================
-    
-    // Temporizador para aparición del Goblin (Cada 1 minuto)
+    // 3. GOBLIN
     const currentTimeMs = Date.now();
     if (currentTimeMs - lastSpawnTime >= SPAWN_INTERVAL) {
         spawnGoblin();
@@ -729,48 +688,34 @@ camera.position.z = Math.max(-20, Math.min(25, camera.position.z));
     }
 
     if (activeGoblin) {
-        // El goblin camina lentamente hacia la posición actual del jugador en el eje Z
-        const goblinSpeed = 1.5; // Metros por segundo
+        const goblinSpeed = 1.5;
         if (activeGoblin.position.z < camera.position.z - 0.8) {
             activeGoblin.position.z += goblinSpeed * delta;
         } else {
-            // El goblin llegó al jugador: hace temblar las armas/rig como ataque
-            weaponRig.position.y = camera.position.y - 0.1 + Math.sin(elapsedTime * 20) * 0.05; 
+            weaponRig.position.y = camera.position.y - 0.1 + Math.sin(elapsedTime * 20) * 0.05;
         }
 
-        // Recuperación de daño (Restaurar color original del goblin tras parpadear en rojo)
         if (activeGoblin.userData.isHurt) {
             activeGoblin.userData.hurtTimer -= delta;
             if (activeGoblin.userData.hurtTimer <= 0) {
                 activeGoblin.userData.isHurt = false;
                 activeGoblin.userData.meshes.forEach(mesh => {
-                    mesh.material = mesh.userData.originalMaterial; // Restaurar material original
+                    mesh.material = mesh.userData.originalMaterial;
                 });
             }
         }
     }
 
-    // ==========================================
-    // 4. ANIMACIÓN Y RIGGING DE ARMAS (Espada y Escudo)
-    // ==========================================
-    
-    // El contenedor copia exactamente la posición y orientación del jugador
+    // 4. ARMAS
     weaponRig.position.copy(camera.position);
     weaponRig.rotation.copy(camera.rotation);
 
-    // Animación de balanceo al caminar (Bobbing)
-    const isMoving = (moveForward || moveBackward || moveLeft || moveRight) && (document.pointerLockElement === document.body);
-    let bobbingX = 0;
-    let bobbingY = 0;
-    if (isMoving) {
-        bobbingX = Math.sin(elapsedTime * 12) * 0.015;
-        bobbingY = Math.cos(elapsedTime * 24) * 0.01;
-    }
+    const isMoving = (moveForward || moveBackward || moveLeft || moveRight);
+    let bobbingX = isMoving ? Math.sin(elapsedTime * 12) * 0.015 : 0;
+    let bobbingY = isMoving ? Math.cos(elapsedTime * 24) * 0.01 : 0;
 
-    // --- ANIMACIÓN ESCUDO (Interpolación / Lerp) ---
-    // Si shieldActive es true, sube al centro para cubrirnos. Si no, baja al lateral.
     const targetDefense = shieldActive ? 1.0 : 0.0;
-    currentShieldDefense += (targetDefense - currentShieldDefense) * 12 * delta; // Transición suave
+    currentShieldDefense += (targetDefense - currentShieldDefense) * 12 * delta;
 
     shieldGroup.position.x = THREE.MathUtils.lerp(-0.35, -0.05, currentShieldDefense) + bobbingX;
     shieldGroup.position.y = THREE.MathUtils.lerp(-0.25, -0.05, currentShieldDefense) + bobbingY;
@@ -778,71 +723,26 @@ camera.position.z = Math.max(-20, Math.min(25, camera.position.z));
     shieldGroup.rotation.y = THREE.MathUtils.lerp(0.4, 0.9, currentShieldDefense);
     shieldGroup.rotation.x = THREE.MathUtils.lerp(0.1, 0.2, currentShieldDefense);
 
-    // --- ANIMACIÓN ESPADA (Estocada clásica) ---
-    if (attackTime >= 0) {
-        attackTime += delta;
-        const progress = attackTime / ATTACK_DURATION;
-// --- ANIMACIÓN ESPADA (Estocada clásica) ---
+    // 5. ANIMACIÓN ESPADA
     if (attackTime >= 0) {
         const previousProgress = attackTime / ATTACK_DURATION;
         attackTime += delta;
         const progress = attackTime / ATTACK_DURATION;
 
-        // DETECCIÓN DE GOLPE: Justo cuando la espada se extiende al máximo (30% de la animación)
-        if (previousProgress < 0.3 && progress >= 0.3) {
-            checkPlayerHit();
-        }
+        if (previousProgress < 0.3 && progress >= 0.3) checkPlayerHit();
 
         if (progress > 1.0) {
-            // Fin de la animación, regresa al reposo
             attackTime = -1;
             swordGroup.position.set(0.35, -0.3, -0.6);
             swordGroup.rotation.set(0.2, -0.4, -0.2);
         } else {
-            // Fase de estocada rápida (0.0 a 0.3) y retorno lento (0.3 a 1.0)
-            let zOffset, rotX, rotY;
-            if (progress < 0.3) {
-                const p = progress / 0.3; // Escala de 0 a 1
-                zOffset = THREE.MathUtils.lerp(-0.6, -0.9, p); // Estira hacia adelante
-                rotX = THREE.MathUtils.lerp(0.2, -0.5, p);     // Apunta hacia abajo
-                rotY = THREE.MathUtils.lerp(-0.4, -0.1, p);
-            } else {
-                const p = (progress - 0.3) / 0.7; // Retorno lento
-                zOffset = THREE.MathUtils.lerp(-0.9, -0.6, p); // Regresa
-                rotX = THREE.MathUtils.lerp(-0.5, 0.2, p);
-                rotY = THREE.MathUtils.lerp(-0.1, -0.4, p);
-            }
+            let p = progress < 0.3 ? progress / 0.3 : (progress - 0.3) / 0.7;
+            let zOffset = progress < 0.3 ? THREE.MathUtils.lerp(-0.6, -0.9, p) : THREE.MathUtils.lerp(-0.9, -0.6, p);
+            let rotX = progress < 0.3 ? THREE.MathUtils.lerp(0.2, -0.5, p) : THREE.MathUtils.lerp(-0.5, 0.2, p);
             swordGroup.position.set(0.35 - (progress * 0.15), -0.3 + (progress * 0.05), zOffset);
-            swordGroup.rotation.set(rotX, rotY, -0.2);
+            swordGroup.rotation.set(rotX, -0.4, -0.2);
         }
     } else {
-        // En reposo, solo tiene el sutil vaivén (bobbing) si caminas
-        swordGroup.position.set(0.35 + bobbingX, -0.3 + bobbingY, -0.6);
-    }
-        if (progress > 1.0) {
-            // Fin de la animación
-            attackTime = -1;
-            swordGroup.position.set(0.35, -0.3, -0.6);
-            swordGroup.rotation.set(0.2, -0.4, -0.2);
-        } else {
-            // Fase de estocada rápida (0.0 a 0.3) y retorno lento (0.3 a 1.0)
-            let zOffset, rotX, rotY;
-            if (progress < 0.3) {
-                const p = progress / 0.3; // Escala a un rango entre 0 - 1
-                zOffset = THREE.MathUtils.lerp(-0.6, -0.9, p); // Lanza hacia adelante
-                rotX = THREE.MathUtils.lerp(0.2, -0.5, p);     // Inclina la punta abajo
-                rotY = THREE.MathUtils.lerp(-0.4, -0.1, p);
-            } else {
-                const p = (progress - 0.3) / 0.7; // Escala de retorno entre 0 - 1
-                zOffset = THREE.MathUtils.lerp(-0.9, -0.6, p); // Vuelve a su sitio
-                rotX = THREE.MathUtils.lerp(-0.5, 0.2, p);
-                rotY = THREE.MathUtils.lerp(-0.1, -0.4, p);
-            }
-            swordGroup.position.set(0.35 - (progress * 0.15), -0.3 + (progress * 0.05), zOffset);
-            swordGroup.rotation.set(rotX, rotY, -0.2);
-        }
-    } else {
-        // En reposo, solo tiene el sutil vaivén (bobbing) si estás caminando
         swordGroup.position.set(0.35 + bobbingX, -0.3 + bobbingY, -0.6);
     }
 

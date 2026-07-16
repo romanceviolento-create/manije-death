@@ -15,12 +15,11 @@
             user-select: none;
         }
 
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
+       #game-container {
+    touch-action: none; /* Esto permite que tu código gestione el toque */
+    -webkit-tap-highlight-color: transparent; /* Quita el recuadro gris al tocar */
+    user-select: none;
+}
 
         canvas {
             display: block;
