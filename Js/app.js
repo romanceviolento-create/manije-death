@@ -338,39 +338,39 @@ window.addEventListener('keyup', (e) => {
 });
 
 // 2. CAPTURA DEL CURSOR (Pointer Lock API)
+
 const instrucciones = document.getElementById('instrucciones');
 
-// Función que inicia el modo juego (oculta menú y bloquea puntero si es posible)
 const iniciarJuego = (e) => {
     if (e) e.preventDefault();
     
-    // 1. Ocultar instrucciones
+    // Ocultar menú
     if (instrucciones) instrucciones.style.display = 'none';
 
-    // 2. Solicitar permiso de sensores (Específico para iOS y Android moderno)
+    // SOLO si es PC, bloqueamos el puntero
+    if (!isMobile && document.body.requestPointerLock) {
+        document.body.requestPointerLock();
+    }
+
+    // Solicitar permisos de sensores (Android/iOS)
     if (typeof DeviceOrientationEvent !== 'undefined' && 
         typeof DeviceOrientationEvent.requestPermission === 'function') {
-        
-        DeviceOrientationEvent.requestPermission()
-            .then(response => {
-                if (response === 'granted') {
-                    console.log("Permiso de sensores concedido");
-                }
-            })
-            .catch(console.error);
+        DeviceOrientationEvent.requestPermission().catch(console.error);
     }
-};
+}; // <--- ¡Esta llave cierra la función iniciarJuego!
 
-// Evento para mouse (PC)
+// Eventos de inicio (Click o Tap)
 if (instrucciones) {
     instrucciones.addEventListener('click', iniciarJuego);
-}
-
-// Evento para táctil (Móvil)
-if (instrucciones) {
     instrucciones.addEventListener('touchstart', iniciarJuego, { passive: false });
 }
 
+// Escucha cuando el estado de bloqueo cambia
+document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement !== document.body) {
+        if (instrucciones) instrucciones.style.display = 'flex';
+    }
+});
 // Escucha cuando el estado de bloqueo cambia
 
 
