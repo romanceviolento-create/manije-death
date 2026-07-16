@@ -3,60 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Castillo Retro 3D</title>
+    <title>Juego</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #05050a;
-            font-family: monospace;
-        }
-
-        /* EL TRUCO DEL PIXELADO: 
-           Forzamos al navegador a estirar los píxeles sin suavizarlos */
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-
+        body { margin: 0; overflow: hidden; }
         #instrucciones {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ffaa44;
-            text-align: center;
-            background: rgba(10, 10, 20, 0.9);
-            padding: 25px;
-            border: 2px solid #ffaa44;
-            border-radius: 4px;
-            cursor: pointer;
-            user-select: none;
-            box-shadow: 0 0 20px rgba(0,0,0,0.9);
-            z-index: 10;
-			pointer-events: none; /* <--- ESTO ES LO QUE FALTA */
+            position: fixed; width: 100%; height: 100%;
+            background: black; color: orange;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; cursor: pointer;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-
-    <div id="instrucciones">
-        <h2 style="margin-top: 0; letter-spacing: 2px;">ENTRAR AL CASTILLO</h2>
-        <p>Hacé click acá para activar la cámara en 1ra persona</p>
-        <p style="color:#888; font-size: 12px; line-height: 1.6;">
-            Moverse: <b>W, A, S, D</b> o Flechas<br>
-            Mirar: <b>Mover el Mouse</b><br>
-            Salir: <b>Esc</b>
-        </p>
-    </div>
-
-    <script src="js/app.js?v=2.0"></script>
+    <div id="instrucciones"><h1>TOCÁ PARA ENTRAR</h1></div>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
