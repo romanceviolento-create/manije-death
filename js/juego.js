@@ -1,5 +1,5 @@
 /**
- * --- MÓDULO: Aetricia Engine - Mapas y Terreno ---
+ * --- MÓDULO: Aetricia Engine - Mapas, Terreno y Ciclo Día/Noche ---
  */
 class AetriciaMap {
     constructor() {
@@ -20,6 +20,16 @@ class AetriciaMap {
         try {
             await this.bmp2mapa(this.mapaActualID, 'terreno');
             await this.bmp2mapa(this.mapaActualID + "a", 'altura');
+
+            const response = await fetch(`assets/mapas/${this.mapaActualID}.ini`);
+            if (response.ok) {
+                const data = await response.text();
+                const conexiones = data.split('\n').map(linea => linea.trim());
+                this.norte = conexiones[0] || "0";
+                this.sur = conexiones[1] || "0";
+                this.este = conexiones[2] || "0";
+                this.oeste = conexiones[3] || "0";
+            }
 
             this.clienteReemplazaTerreno();
             console.log(`Mapa ${this.mapaActualID} cargado exitosamente.`);
@@ -69,16 +79,17 @@ const heroe = { x: 135, y: 129 };
 let diccionario = {};
 let texturasCache = {};
 
-// --- 0. INITS ---
+// --- 0. INITS (320x200) ---
 const RETRO_WIDTH = 320;
-const RETRO_HEIGHT = 180;
+const RETRO_HEIGHT = 200;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x0a050f, 0.015);
-scene.background = new THREE.Color(0x0a050f);
+scene.fog = new THREE.FogExp2(0x0a050f, 0.05);
+const sceneBackgroundBase = new THREE.Color(0x0a050f);
+scene.background = sceneBackgroundBase;
 
-const camera = new THREE.PerspectiveCamera(70, RETRO_WIDTH / RETRO_HEIGHT, 0.1, 100);
-camera.position.set(heroe.x, 1.6, heroe.y);
+const camera = new THREE.PerspectiveCamera(45, RETRO_WIDTH / RETRO_HEIGHT, 0.1, 100);
+camera.position.set(heroe.x + 0.5, 1.6, heroe.y + 0.5);
 
 const canvas = document.createElement('canvas');
 canvas.id = "game-canvas";
@@ -107,7 +118,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(RETRO_WIDTH, RETRO_HEIGHT, false); 
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// --- 1. ILUMINACIÓN ---
+// --- 1. ILUMINACIÓN & CICLO DÍA/NOCHE ---
 const ambientLight = new THREE.AmbientLight(0x1a1525, 1.2);
 scene.add(ambientLight);
 
@@ -128,7 +139,7 @@ const propiedadesRecursos = {
 
 const defaultPixelScale = 128; 
 
-// --- 3. SISTEMA DE TERRENO DINÁMICO ---
+// --- 3. SISTEMA DE TERRENO CÓNICO DINÁMICO ---
 const grupoTerreno = new THREE.Group();
 const grupoRecursos = new THREE.Group();
 scene.add(grupoTerreno);
@@ -136,12 +147,14 @@ scene.add(grupoRecursos);
 
 const cubes = [];
 const sprites = [];
-const RANGE = 20; 
-const size = (RANGE * 2 + 1) * (RANGE * 2 + 1);
+const MAX_BASE_HALF = 25;
+const TOTAL_CONE_ROWS = 40;
+const maxConeSize = 3000; 
 
-for (let i = 0; i < size; i++) {
+for (let i = 0; i < maxConeSize; i++) {
     const tile = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), floorMaterial);
     tile.rotation.x = -Math.PI / 2;
+    tile.visible = false;
     grupoTerreno.add(tile);
     cubes.push(tile);
 
@@ -154,6 +167,7 @@ for (let i = 0; i < size; i++) {
             roughness: 0.9
         })
     );
+    sprite.visible = false;
     grupoRecursos.add(sprite);
     sprites.push(sprite);
 }
@@ -165,87 +179,108 @@ function getAltura(idx) {
     return (mapaAlturas[val] !== undefined ? mapaAlturas[val] : 0) * 0.5;
 }
 
-function actualizarTerreno() {
+let ultimaHeroeX = -999;
+let ultimaHeroeY = -999;
+let ultimoYawIndex = -999;
+
+function actualizarTerreno(forzar = false) {
+    const yawRedondeado = Math.round(yaw * 12); 
+
+    if (!forzar && heroe.x === ultimaHeroeX && heroe.y === ultimaHeroeY && yawRedondeado === ultimoYawIndex) {
+        return; 
+    }
+
+    ultimaHeroeX = heroe.x;
+    ultimaHeroeY = heroe.y;
+    ultimoYawIndex = yawRedondeado;
+
     for (let k = 0; k < cubes.length; k++) {
         cubes[k].visible = false;
         sprites[k].visible = false;
         sprites[k].material.map = null;
     }
 
-    let activeIndex = 0;
+    let i = 0;
+    
+    const forwardX = -Math.sin(yaw);
+    const forwardZ = -Math.cos(yaw);
+    const rightX = Math.cos(yaw);
+    const rightZ = -Math.sin(yaw);
 
-    for(let yy = heroe.y - RANGE; yy <= heroe.y + RANGE; yy++) {
-        for(let xx = heroe.x - RANGE; xx <= heroe.x + RANGE; xx++) {
-            if (xx >= 0 && xx < 1000 && yy >= 0 && yy < 1000) {
-                
-                const dx = xx - heroe.x;
-                const dy = yy - heroe.y;
-                if ((dx * dx + dy * dy) > RANGE * RANGE) continue;
+    const currentOriginX = heroe.x;
+    const currentOriginY = heroe.y;
 
-                if (activeIndex >= size) break;
+    for (let r = 0; r <= TOTAL_CONE_ROWS; r++) {
+        let halfWidth = Math.floor(THREE.MathUtils.lerp(2, MAX_BASE_HALF, r / TOTAL_CONE_ROWS));
+        if (r === 0) halfWidth = 3; 
 
-                const idx = (yy * 1000) + xx;
+        const rowCenterX = currentOriginX + (forwardX * (r > 0 ? r - 1 : 0));
+        const rowCenterY = currentOriginY + (forwardZ * (r > 0 ? r - 1 : 0));
+
+        for (let w = -halfWidth; w <= halfWidth; w++) {
+            const worldX = Math.floor(rowCenterX + (rightX * w));
+            const worldY = Math.floor(rowCenterY + (rightZ * w));
+
+            if (worldX >= 0 && worldX < 1000 && worldY >= 0 && worldY < 1000) {
+                const idx = (worldY * 1000) + worldX;
                 const altura = getAltura(idx);
-                
-                const currentCube = cubes[activeIndex];
-                currentCube.visible = true;
-                currentCube.position.set(xx, altura, yy);
-                
-                const currentSprite = sprites[activeIndex];
-                const entId = EngineMap.a[idx];
-                
-                if (entId > 0 && diccionario[entId]) {
-                    currentSprite.visible = true;
-                    const nombreArchivo = diccionario[entId];
-                    const url = 'assets/bmp/' + nombreArchivo;
-                    
-                    const props = propiedadesRecursos[nombreArchivo] || { modo: 'VERTICAL', escala: 1.0, offsetY: 0 };
 
-                    if (!texturasCache[url]) {
-                        texturasCache[url] = loader.load(url, (tex) => {
-                            tex.minFilter = THREE.NearestFilter;
-                            tex.magFilter = THREE.NearestFilter;
-                            tex.generateMipmaps = false;
+                if (i < cubes.length) {
+                    cubes[i].visible = true;
+                    cubes[i].position.set(worldX + 0.5, altura, worldY + 0.5);
 
-                            tex.userData = {
-                                width: (tex.image.width / defaultPixelScale) * props.escala,
-                                height: (tex.image.height / defaultPixelScale) * props.escala
-                            };
+                    const entId = EngineMap.a[idx];
+                    if (entId > 0 && diccionario[entId]) {
+                        sprites[i].visible = true;
+                        const nombreArchivo = diccionario[entId];
+                        const url = 'assets/bmp/' + nombreArchivo;
 
-                            sprites.forEach(s => {
-                                if (s.material.map === tex) {
-                                    s.scale.set(tex.userData.width, tex.userData.height, 1);
-                                }
-                            });
-                        }, undefined, () => {});
+                        const props = propiedadesRecursos[nombreArchivo] || { modo: 'VERTICAL', escala: 1.0, offsetY: 0 };
+
+                        if (!texturasCache[url]) {
+                            texturasCache[url] = loader.load(url, (tex) => {
+                                tex.minFilter = THREE.NearestFilter;
+                                tex.magFilter = THREE.NearestFilter;
+                                tex.generateMipmaps = false;
+
+                                const objectMaxWidth = (RETRO_WIDTH / 2) / defaultPixelScale;
+                                tex.userData = {
+                                    width: objectMaxWidth * props.escala,
+                                    height: (tex.image.height / defaultPixelScale) * props.escala
+                                };
+
+                                sprites.forEach(s => {
+                                    if (s.material.map === tex) {
+                                        s.scale.set(tex.userData.width, tex.userData.height, 1);
+                                    }
+                                });
+                            }, undefined, () => {});
+                        }
+
+                        sprites[i].material.map = texturasCache[url];
+                        sprites[i].material.needsUpdate = true;
+
+                        if (texturasCache[url].userData && texturasCache[url].userData.width) {
+                            const dat = texturasCache[url].userData;
+                            sprites[i].scale.set(dat.width, dat.height, 1);
+                        } else {
+                            const defaultW = ((RETRO_WIDTH / 2) / defaultPixelScale) * props.escala;
+                            const defaultH = (1 / defaultPixelScale) * props.escala;
+                            sprites[i].scale.set(defaultW, defaultH, 1);
+                        }
+
+                        if (props.modo === 'HORIZONTAL') {
+                            sprites[i].rotation.set(-Math.PI / 2, 0, 0);
+                        }
+
+                        const hSize = (texturasCache[url].userData && texturasCache[url].userData.height) ? texturasCache[url].userData.height : 1;
+                        const baseOffsetY = props.modo === 'HORIZONTAL' ? 0.01 : (hSize / 2);
+                        const yOffset = baseOffsetY + (props.offsetY || 0);
+
+                        sprites[i].position.set(worldX + 0.5, altura + yOffset, worldY + 0.5);
                     }
-
-                    currentSprite.material.map = texturasCache[url];
-                    currentSprite.material.needsUpdate = true;
-
-                    if (texturasCache[url].userData && texturasCache[url].userData.width) {
-                        const dat = texturasCache[url].userData;
-                        currentSprite.scale.set(dat.width, dat.height, 1);
-                    } else {
-                        const w = (1 / defaultPixelScale) * props.escala;
-                        const h = (1 / defaultPixelScale) * props.escala;
-                        currentSprite.scale.set(w, h, 1);
-                    }
-
-                    if (props.modo === 'HORIZONTAL') {
-                        currentSprite.rotation.set(-Math.PI / 2, 0, 0);
-                    }
-
-                    const hSize = (texturasCache[url].userData && texturasCache[url].userData.height) ? texturasCache[url].userData.height : 1;
-                    const baseOffsetY = props.modo === 'HORIZONTAL' ? 0.01 : (hSize / 2);
-                    const yOffset = baseOffsetY + (props.offsetY || 0);
-
-                    currentSprite.position.set(xx, altura + yOffset, yy);
-                } else {
-                    currentSprite.visible = false;
-                    currentSprite.material.map = null;
+                    i++;
                 }
-                activeIndex++;
             }
         }
     }
@@ -283,23 +318,22 @@ const shieldBoss = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.03), darkI
 shieldGroup.add(shieldBoss);
 weaponRig.add(shieldGroup);
 
-// --- 5. CONTROLES Y MOVIMIENTO DISCRETO (POR GRILLA) ---
-let gridX = heroe.x;
-let gridY = heroe.y;
-let targetGridX = gridX;
-let targetGridY = gridY;
-
-let facingDirection = 0; // 0: Norte (-Z), 1: Este (+X), 2: Sur (+Z), 3: Oeste (-X)
-let isMovingGrid = false;
-let moveProgress = 1.0; 
-const MOVE_DURATION = 0.15; 
-
-let visualCamX = gridX;
-let visualCamZ = gridY;
-let targetYaw = 0;
+// --- 5. CONTROLES Y MOVIMIENTO POR CASILLAS ---
 let yaw = 0;
-let pitch = 0.050;
-const ROTATION_SPEED = 10;
+let pitch = 0;
+let targetYaw = 0; 
+const ROTATION_SPEED = 5;
+
+let isMoving = false;
+let moveProgress = 1.0;
+let startCellX = heroe.x;
+let startCellY = heroe.y;
+let targetCellX = heroe.x;
+let targetCellY = heroe.y;
+const STEP_DURATION = 0.25; 
+
+let isTouching = false;
+let lastTouchX = 0, lastTouchY = 0;
 
 let shieldActive = false;
 let currentShieldDefense = 0;
@@ -319,55 +353,95 @@ function setShieldState(active) {
     }
 }
 
-function intentarMover(dx, dy) {
-    if (isMovingGrid) return; 
-
-    let nextX = gridX;
-    let nextY = gridY;
-
-    if (dx !== 0) {
-        const dirAjustada = (facingDirection + (dx > 0 ? 1 : 3)) % 4;
-        if (dirAjustada === 0) nextY--;
-        else if (dirAjustada === 1) nextX++;
-        else if (dirAjustada === 2) nextY++;
-        else if (dirAjustada === 3) nextX--;
-    } else if (dy !== 0) {
-        const dirAjustada = (facingDirection + (dy < 0 ? 0 : 2)) % 4;
-        if (dirAjustada === 0) nextY--;
-        else if (dirAjustada === 1) nextX++;
-        else if (dirAjustada === 2) nextY++;
-        else if (dirAjustada === 3) nextX--;
-    }
-
-    if (nextX >= 0 && nextX < 1000 && nextY >= 0 && nextY < 1000) {
-        targetGridX = nextX;
-        targetGridY = nextY;
-        isMovingGrid = true;
-        moveProgress = 0.0;
-    }
-}
-
 window.addEventListener('keydown', (e) => {
-    if (isMovingGrid) return;
+    if (isMoving) return; 
+
+    let dx = 0;
+    let dz = 0;
 
     switch (e.code) {
-        case 'KeyW': case 'ArrowUp': intentarMover(0, -1); break;
-        case 'KeyS': case 'ArrowDown': intentarMover(0, 1); break;
-        case 'KeyA': case 'ArrowLeft': intentarMover(-1, 0); break;
-        case 'KeyD': case 'ArrowRight': intentarMover(1, 0); break;
+        case 'KeyW': case 'ArrowUp':
+            dx = -Math.round(Math.sin(yaw));
+            dz = -Math.round(Math.cos(yaw));
+            break;
+        case 'KeyS': case 'ArrowDown':
+            dx = Math.round(Math.sin(yaw));
+            dz = Math.round(Math.cos(yaw));
+            break;
+        case 'KeyA': case 'ArrowLeft':
+            dx = -Math.round(Math.cos(yaw));
+            dz = Math.round(Math.sin(yaw));
+            break;
+        case 'KeyD': case 'ArrowRight':
+            dx = Math.round(Math.cos(yaw));
+            dz = -Math.round(Math.sin(yaw));
+            break;
         case 'KeyQ': 
-            facingDirection = (facingDirection + 3) % 4; 
-            targetYaw = facingDirection * (Math.PI / 2);
-            break;
+            targetYaw += Math.PI / 2; 
+            return;
         case 'KeyE': 
-            facingDirection = (facingDirection + 1) % 4; 
-            targetYaw = facingDirection * (Math.PI / 2);
-            break;
+            targetYaw -= Math.PI / 2; 
+            return;
+        default:
+            return;
+    }
+
+    if (dx !== 0 || dz !== 0) {
+        startCellX = heroe.x;
+        startCellY = heroe.y;
+        targetCellX = startCellX + dx;
+        targetCellY = startCellY + dz;
+
+        if (targetCellX >= 0 && targetCellX < 1000 && targetCellY >= 0 && targetCellY < 1000) {
+            isMoving = true;
+            moveProgress = 0.0;
+        }
     }
 });
 
+canvas.addEventListener('click', () => {
+    canvas.requestPointerLock();
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (document.pointerLockElement === canvas) {
+        const sensitivity = 0.002;
+        yaw -= e.movementX * sensitivity;
+        pitch -= e.movementY * sensitivity;
+
+        const maxPitch = Math.PI / 2 - 0.05;
+        pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
+        targetYaw = yaw;
+    }
+});
+
+window.addEventListener('touchstart', (e) => {
+    const target = e.target;
+    if (target.classList.contains('interactive') || target.closest('.interactive') || target.closest('#joystick-container')) return;
+    isTouching = true;
+    lastTouchX = e.touches[0].clientX;
+    lastTouchY = e.touches[0].clientY;
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+    if (isTouching) {
+        e.preventDefault();
+        const deltaX = e.touches[0].clientX - lastTouchX;
+        const deltaY = e.touches[0].clientY - lastTouchY;
+        yaw -= deltaX * 0.005; 
+        pitch -= deltaY * 0.005;
+        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+        targetYaw = yaw;
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', () => { isTouching = false; });
+
 const joystickContainer = document.getElementById('joystick-container');
 const joystickKnob = document.getElementById('joystick-knob');
+
 let joystickActive = false;
 let joystickCenter = { x: 0, y: 0 };
 let joystickVector = { x: 0, y: 0 };
@@ -380,20 +454,36 @@ if (joystickContainer && joystickKnob) {
         const rect = joystickContainer.getBoundingClientRect();
         joystickCenter.x = rect.left + rect.width / 2;
         joystickCenter.y = rect.top + rect.height / 2;
-        updateJoystickPosition(e.touches[0].clientX, e.touches[0].clientY);
+        
+        const touch = e.touches[0];
+        updateJoystickPosition(touch.clientX, touch.clientY);
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
         if (!joystickActive) return;
         e.preventDefault();
-        updateJoystickPosition(e.touches[0].clientX, e.touches[0].clientY);
+        
+        for (let i = 0; i < e.touches.length; i++) {
+            const touch = e.touches[i];
+            updateJoystickPosition(touch.clientX, touch.clientY);
+        }
     }, { passive: false });
 
-    window.addEventListener('touchend', () => {
-        joystickActive = false;
-        joystickVector.x = 0;
-        joystickVector.y = 0;
-        joystickKnob.style.transform = `translate(0px, 0px)`;
+    window.addEventListener('touchend', (e) => {
+        let stillTouching = false;
+        for (let i = 0; i < e.touches.length; i++) {
+            const touch = e.touches[i];
+            const dx = touch.clientX - joystickCenter.x;
+            const dy = touch.clientY - joystickCenter.y;
+            if (Math.hypot(dx, dy) < 100) stillTouching = true;
+        }
+        
+        if (!stillTouching && joystickActive) {
+            joystickActive = false;
+            joystickVector.x = 0;
+            joystickVector.y = 0;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+        }
     });
 }
 
@@ -401,21 +491,55 @@ function updateJoystickPosition(clientX, clientY) {
     let dx = clientX - joystickCenter.x;
     let dy = clientY - joystickCenter.y;
     const distance = Math.hypot(dx, dy);
+
     if (distance > maxJoystickRadius) {
         dx = (dx / distance) * maxJoystickRadius;
         dy = (dy / distance) * maxJoystickRadius;
     }
+
     joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
     joystickVector.x = dx / maxJoystickRadius;
     joystickVector.y = dy / maxJoystickRadius;
 
-    if (!isMovingGrid) {
-        if (joystickVector.y < -0.5) intentarMover(0, -1);
-        else if (joystickVector.y > 0.5) intentarMover(0, 1);
-        else if (joystickVector.x < -0.5) intentarMover(-1, 0);
-        else if (joystickVector.x > 0.5) intentarMover(1, 0);
+    if (!isMoving && (Math.abs(joystickVector.x) > 0.5 || Math.abs(joystickVector.y) > 0.5)) {
+        let dxStep = 0;
+        let dzStep = 0;
+        if (Math.abs(joystickVector.y) > Math.abs(joystickVector.x)) {
+            const forwardSign = joystickVector.y < 0 ? 1 : -1;
+            dxStep = -forwardSign * Math.round(Math.sin(yaw));
+            dzStep = -forwardSign * Math.round(Math.cos(yaw));
+        } else {
+            const rightSign = joystickVector.x > 0 ? 1 : -1;
+            dxStep = rightSign * Math.round(Math.cos(yaw));
+            dzStep = -rightSign * Math.round(Math.sin(yaw));
+        }
+
+        if (dxStep !== 0 || dzStep !== 0) {
+            startCellX = heroe.x;
+            startCellY = heroe.y;
+            targetCellX = startCellX + dxStep;
+            targetCellY = startCellY + dzStep;
+            if (targetCellX >= 0 && targetCellX < 1000 && targetCellY >= 0 && targetCellY < 1000) {
+                isMoving = true;
+                moveProgress = 0.0;
+            }
+        }
     }
 }
+
+document.addEventListener('contextmenu', (e) => {
+    if (document.pointerLockElement === canvas) e.preventDefault();
+});
+
+document.addEventListener('mousedown', (e) => {
+    if (document.pointerLockElement !== canvas) return;
+    if (e.button === 2) setShieldState(true);
+});
+
+document.addEventListener('mouseup', (e) => {
+    if (document.pointerLockElement !== canvas) return;
+    if (e.button === 2) setShieldState(false);
+});
 
 const btnEscudoEl = document.getElementById('btn-escudo');
 const btnItemsEl = document.getElementById('btn-items');
@@ -449,12 +573,20 @@ async function iniciarJuego() {
     } catch (e) {
         console.warn("Aviso cargando diccionario:", e);
     }
-    actualizarTerreno();
+    
+    // Forzamos la posición inicial al cargar para respetar la celda de origen
+    startCellX = heroe.x;
+    startCellY = heroe.y;
+    targetCellX = heroe.x;
+    targetCellY = heroe.y;
+    camera.position.set(heroe.x + 0.5, 1.6, heroe.y + 0.5);
+
+    actualizarTerreno(true);
 }
 
 iniciarJuego();
 
-// --- 6. BUCLE DE RENDERIZACIÓN Y CICLO DÍA/NOCHE ---
+// --- 6. BUCLE DE RENDERIZACIÓN ---
 const clock = new THREE.Clock();
 
 function animate() {
@@ -462,74 +594,77 @@ function animate() {
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    const cicloTiempo = (elapsedTime % 60) / 60; 
-    const factorDay = (Math.sin(cicloTiempo * Math.PI * 2 - Math.PI / 2) + 1) / 2;
-
-    const colorNocheAmb = new THREE.Color(0x0f0b15);
-    const colorDiaAmb = new THREE.Color(0xdddddd);
-
-    const colorNocheFog = new THREE.Color(0x020104);
-    const colorDiaFog = new THREE.Color(0x7a828c);   
-
-    ambientLight.color.copy(colorNocheAmb).lerp(colorDiaAmb, factorDay);
-    ambientLight.intensity = THREE.MathUtils.lerp(0.5, 1.8, factorDay);
-
-    scene.fog.color.copy(colorNocheFog).lerp(colorDiaFog, factorDay);
-    scene.background.copy(scene.fog.color); 
-
-    const targetTorchIntensity = THREE.MathUtils.lerp(4.0, 0.02, factorDay);
-    torchLight.intensity = targetTorchIntensity + Math.sin(elapsedTime * 10) * 0.2 + Math.random() * 0.05;
-
     yaw += (targetYaw - yaw) * ROTATION_SPEED * delta;
     pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
     
     camera.rotation.set(pitch, yaw, 0);
     camera.order = "YXZ";
 
-    // Interpolación de movimiento discreto por grilla
-    if (isMovingGrid) {
-        moveProgress += delta / MOVE_DURATION;
+    if (isMoving) {
+        moveProgress += delta / STEP_DURATION;
         if (moveProgress >= 1.0) {
             moveProgress = 1.0;
-            gridX = targetGridX;
-            gridY = targetGridY;
-            isMovingGrid = false;
+            isMoving = false;
+            heroe.x = targetCellX;
+            heroe.y = targetCellY;
         }
-        visualCamX = THREE.MathUtils.lerp(gridX, targetGridX, moveProgress);
-        visualCamZ = THREE.MathUtils.lerp(gridY, targetGridY, moveProgress);
-    } else {
-        visualCamX = gridX;
-        visualCamZ = gridY;
     }
 
-    camera.position.x = visualCamX;
-    camera.position.z = visualCamZ;
+    const currentX = THREE.MathUtils.lerp(startCellX, targetCellX, moveProgress) + 0.5;
+    const currentZ = THREE.MathUtils.lerp(startCellY, targetCellY, moveProgress) + 0.5;
+    
+    camera.position.x = currentX;
+    camera.position.z = currentZ;
     camera.position.y = 0.4;
 
-    if (heroe.x !== gridX || heroe.y !== gridY) {
-        heroe.x = gridX;
-        heroe.y = gridY;
-        actualizarTerreno();
-    }
+    // Sincronización continua de la celda actual sin perder la referencia
+    heroe.x = Math.floor(camera.position.x);
+    heroe.y = Math.floor(camera.position.z);
+    
+    actualizarTerreno();
 
     sprites.forEach(sprite => {
         if (sprite.visible) {
             const entId = EngineMap.a[Math.floor(sprite.position.z) * 1000 + Math.floor(sprite.position.x)];
             const nombreArchivo = diccionario[entId];
             const props = propiedadesRecursos[nombreArchivo] || { modo: 'VERTICAL' };
+            
             if (props.modo !== 'HORIZONTAL') {
                 sprite.quaternion.copy(camera.quaternion);
             }
         }
     });
 
+    // --- CICLO DÍA / NOCHE ---
+    const cicloTiempo = (elapsedTime % 60) / 60; 
+    const anguloSol = cicloTiempo * Math.PI * 2;
+    const factorDia = Math.sin(anguloSol); 
+
+    const colorAmbiente = new THREE.Color();
+    const colorCielo = new THREE.Color();
+
+    if (factorDia > 0) {
+        colorAmbiente.setHSL(0.12, 0.4, THREE.MathUtils.lerp(0.15, 0.45, factorDia));
+        colorCielo.setHSL(0.6, 0.3, THREE.MathUtils.lerp(0.05, 0.25, factorDia));
+        torchLight.intensity = THREE.MathUtils.lerp(3.0, 1.0, factorDia);
+    } else {
+        colorAmbiente.setHSL(0.7, 0.2, 0.08);
+        colorCielo.setHSL(0.7, 0.3, 0.02);
+        torchLight.intensity = 3.5 + Math.sin(elapsedTime * 10) * 0.4;
+    }
+
+    ambientLight.color.copy(colorAmbiente);
+    scene.background.copy(colorCielo);
+    scene.fog.color.copy(colorCielo);
+
     torchLight.position.copy(camera.position);
+
     weaponRig.position.copy(camera.position);
     weaponRig.rotation.copy(camera.rotation);
 
-    if (isMovingGrid) {
-        bobbingX = Math.sin(moveProgress * Math.PI * 4) * 0.015;
-        bobbingY = Math.cos(moveProgress * Math.PI * 8) * 0.01;
+    if (isMoving) {
+        bobbingX = Math.sin(elapsedTime * 15) * 0.02;
+        bobbingY = Math.cos(elapsedTime * 30) * 0.015;
     } else {
         bobbingX = 0;
         bobbingY = 0;
