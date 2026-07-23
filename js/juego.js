@@ -1,18 +1,91 @@
 /**
+ * --- MÓDULO: Aetricia Engine - Mapas y Terreno ---
+ */
+class AetriciaMap {
+    constructor() {
+        this.a = new Int16Array(1000 * 1000);   // Terreno y objetos (Matriz 'a')
+        this.al = new Int16Array(1000 * 1000);  // Alturas y relieve (Matriz 'al')
+        this.ae = new Int32Array(1000 * 1000);  // Entidades e ítems (Matriz 'ae')
+        this.mapaActualID = "1";
+        this.norte = "0";
+        this.sur = "0";
+        this.este = "0";
+        this.oeste = "0";
+    }
+
+    async cargarMapa(mapID) {
+        this.mapaActualID = mapID.toString();
+        console.log(`Iniciando carga del mapa: ${this.mapaActualID}`);
+
+        try {
+            await this.bmp2mapa(this.mapaActualID, 'terreno');
+            await this.bmp2mapa(this.mapaActualID + "a", 'altura');
+
+            const response = await fetch(`assets/mapas/${this.mapaActualID}.ini`);
+            if (response.ok) {
+                const data = await response.text();
+                const conexiones = data.split('\n').map(linea => linea.trim());
+                this.norte = conexiones[0] || "0";
+                this.sur = conexiones[1] || "0";
+                this.este = conexiones[2] || "0";
+                this.oeste = conexiones[3] || "0";
+            }
+
+            this.clienteReemplazaTerreno();
+            console.log(`Mapa ${this.mapaActualID} cargado exitosamente.`);
+        } catch (error) {
+            console.warn("Aviso cargando archivos del mapa:", error);
+        }
+    }
+
+    async bmp2mapa(fileName, destino) {
+        const response = await fetch(`assets/mapas/${fileName}.bmp`);
+        const buffer = await response.arrayBuffer();
+        const view = new DataView(buffer);
+
+        let offset = 1078; 
+        let count = 0;
+        const targetArray = (destino === 'terreno') ? this.a : this.al;
+
+        for (let y = 0; y < 1000; y++) {
+            for (let x = 0; x < 1000; x++) {
+                if (offset + count < buffer.byteLength) {
+                    let byte = view.getUint8(offset + count);
+                    if (byte === 215) byte = 6; 
+                    targetArray[y * 1000 + x] = byte;
+                }
+                count++;
+            }
+        }
+    }
+
+    clienteReemplazaTerreno() {
+        for (let i = 0; i < this.a.length; i++) {
+            const v = this.a[i];
+            if (v === 144) this.a[i] = 930;
+            else if (v === 126) this.a[i] = 955;
+            else if (v === 83) this.a[i] = 945;
+            else if (v === 20) this.a[i] = 935;
+        }
+    }
+}
+
+const EngineMap = new AetriciaMap();
+
+/**
  * --- MÓDULO 1: ESTADO GLOBAL ---
  */
 const heroe = { x: 135, y: 129 };
 let diccionario = {};
 let texturasCache = {};
-let mapaBytes = new Uint8Array(2000000);
-let mapa1Bytes = new Uint8Array(2000000);
 
 // --- 0. INITS ---
 const RETRO_WIDTH = 320;
 const RETRO_HEIGHT = 180;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x0a050f, 0.05);
+// Niebla inicial (Noche)
+scene.fog = new THREE.FogExp2(0x0a050f, 0.015);
 scene.background = new THREE.Color(0x0a050f);
 
 const camera = new THREE.PerspectiveCamera(70, RETRO_WIDTH / RETRO_HEIGHT, 0.1, 100);
@@ -58,7 +131,13 @@ const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x3d3547 });
 const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x221c2b });
 const darkIronMaterial = new THREE.MeshLambertMaterial({ color: 0x1c1822 });
 const loader = new THREE.TextureLoader();
-const orientaciones = {'6': 'HORIZONTAL', '930': 'VERTICAL', '947': 'VERTICAL'};
+
+const propiedadesRecursos = {
+    '0006_pasto.png': { modo: 'HORIZONTAL', escala: 1.0, offsetY: 0.01 },
+    '0090_camino.png': { modo: 'HORIZONTAL', escala: 1.0, offsetY: 0.01 },
+};
+
+const defaultPixelScale = 128; 
 
 // --- 3. SISTEMA DE TERRENO DINÁMICO ---
 const grupoTerreno = new THREE.Group();
@@ -68,7 +147,7 @@ scene.add(grupoRecursos);
 
 const cubes = [];
 const sprites = [];
-const RANGE = 8;
+const RANGE = 20; // Rango de visión ampliado
 const size = (RANGE * 2 + 1) * (RANGE * 2 + 1);
 
 for (let i = 0; i < size; i++) {
@@ -91,8 +170,8 @@ for (let i = 0; i < size; i++) {
 }
 
 function getAltura(idx) {
-    if (idx < 0 || idx >= mapa1Bytes.length) return 0;
-    const val = mapa1Bytes[idx];
+    if (idx < 0 || idx >= EngineMap.al.length) return 0;
+    const val = EngineMap.al[idx];
     const mapaAlturas = { 3: -5, 11: -2, 6: 0, 7: 3, 21: 8 };
     return (mapaAlturas[val] !== undefined ? mapaAlturas[val] : 0) * 0.5;
 }
@@ -102,31 +181,60 @@ function actualizarTerreno() {
     for(let yy = heroe.y - RANGE; yy <= heroe.y + RANGE; yy++) {
         for(let xx = heroe.x - RANGE; xx <= heroe.x + RANGE; xx++) {
             if (xx >= 0 && xx < 1000 && yy >= 0 && yy < 1000) {
-                const idx = (yy * 1000) + xx + 1079;
+                const idx = (yy * 1000) + xx;
                 const altura = getAltura(idx);
                 
                 cubes[i].visible = true;
                 cubes[i].position.set(xx, altura, yy);
                 
-                const entId = mapaBytes[idx];
+                const entId = EngineMap.a[idx];
                 if (entId > 0 && diccionario[entId]) {
                     sprites[i].visible = true;
-                    const url = 'assets/bmp/' + diccionario[entId];
+                    const nombreArchivo = diccionario[entId];
+                    const url = 'assets/bmp/' + nombreArchivo;
                     
+                    const props = propiedadesRecursos[nombreArchivo] || { modo: 'VERTICAL', escala: 1.0, offsetY: 0 };
+
                     if (!texturasCache[url]) {
                         texturasCache[url] = loader.load(url, (tex) => {
                             tex.minFilter = THREE.NearestFilter;
                             tex.magFilter = THREE.NearestFilter;
                             tex.generateMipmaps = false;
+
+                            tex.userData = {
+                                width: (tex.image.width / defaultPixelScale) * props.escala,
+                                height: (tex.image.height / defaultPixelScale) * props.escala
+                            };
+
+                            sprites.forEach(s => {
+                                if (s.material.map === tex) {
+                                    s.scale.set(tex.userData.width, tex.userData.height, 1);
+                                }
+                            });
                         }, undefined, () => {});
                     }
 
                     sprites[i].material.map = texturasCache[url];
                     sprites[i].material.needsUpdate = true;
 
-                    const modo = orientaciones[entId] || 'VERTICAL';
-                    sprites[i].rotation.set(modo === 'HORIZONTAL' ? -Math.PI / 2 : 0, 0, 0);
-                    sprites[i].position.set(xx, altura + (modo === 'HORIZONTAL' ? 0.01 : 0.5), yy);
+                    if (texturasCache[url].userData && texturasCache[url].userData.width) {
+                        const dat = texturasCache[url].userData;
+                        sprites[i].scale.set(dat.width, dat.height, 1);
+                    } else {
+                        const w = (1 / defaultPixelScale) * props.escala;
+                        const h = (1 / defaultPixelScale) * props.escala;
+                        sprites[i].scale.set(w, h, 1);
+                    }
+
+                    if (props.modo === 'HORIZONTAL') {
+                        sprites[i].rotation.set(-Math.PI / 2, 0, 0);
+                    }
+
+                    const hSize = (texturasCache[url].userData && texturasCache[url].userData.height) ? texturasCache[url].userData.height : 1;
+                    const baseOffsetY = props.modo === 'HORIZONTAL' ? 0.01 : (hSize / 2);
+                    const yOffset = baseOffsetY + (props.offsetY || 0);
+
+                    sprites[i].position.set(xx, altura + yOffset, yy);
                 } else {
                     sprites[i].visible = false;
                     sprites[i].material.map = null;
@@ -141,7 +249,7 @@ function actualizarTerreno() {
     }
 }
 
-// --- 4. RIG DE ARMAS (Espada y Escudo) ---
+// --- 4. RIG DE ARMAS ---
 const weaponRig = new THREE.Group();
 scene.add(weaponRig);
 
@@ -179,14 +287,13 @@ const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 
 let yaw = 0;
-let pitch = 0;
+let pitch = 0.050;
 let targetYaw = 0; 
 const ROTATION_SPEED = 10;
 const MOVE_SPEED = 1.0;
 
 let isTouching = false;
 let lastTouchX = 0, lastTouchY = 0;
-
 let shieldActive = false;
 let currentShieldDefense = 0;
 let bobbingX = 0, bobbingY = 0;
@@ -205,7 +312,6 @@ function setShieldState(active) {
     }
 }
 
-// Eventos de teclado (WASD + Q y E para giros fijos)
 window.addEventListener('keydown', (e) => {
     switch (e.code) {
         case 'KeyW': case 'ArrowUp': moveForward = true; break;
@@ -226,51 +332,22 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-canvas.addEventListener('click', () => {
-    canvas.requestPointerLock();
-});
+canvas.addEventListener('click', () => { canvas.requestPointerLock(); });
 
 document.addEventListener('mousemove', (e) => {
     if (document.pointerLockElement === canvas) {
         const sensitivity = 0.002;
         yaw -= e.movementX * sensitivity;
         pitch -= e.movementY * sensitivity;
-
         const maxPitch = Math.PI / 2 - 0.05;
         pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
         targetYaw = yaw;
     }
 });
 
-// Controles Táctiles (Cámara)
-window.addEventListener('touchstart', (e) => {
-    const target = e.target;
-    if (target.classList.contains('interactive') || target.closest('.interactive') || target.closest('#joystick-container')) return;
-    isTouching = true;
-    lastTouchX = e.touches[0].clientX;
-    lastTouchY = e.touches[0].clientY;
-}, { passive: false });
-
-window.addEventListener('touchmove', (e) => {
-    if (isTouching) {
-        e.preventDefault();
-        const deltaX = e.touches[0].clientX - lastTouchX;
-        const deltaY = e.touches[0].clientY - lastTouchY;
-        yaw -= deltaX * 0.005; 
-        pitch -= deltaY * 0.005;
-        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
-        targetYaw = yaw;
-        lastTouchX = e.touches[0].clientX;
-        lastTouchY = e.touches[0].clientY;
-    }
-}, { passive: false });
-
-window.addEventListener('touchend', () => { isTouching = false; });
-
-// --- CONTROL DE JOYSTICK VIRTUAL PARA ANDROID ---
+// Joysticks y táctil...
 const joystickContainer = document.getElementById('joystick-container');
 const joystickKnob = document.getElementById('joystick-knob');
-
 let joystickActive = false;
 let joystickCenter = { x: 0, y: 0 };
 let joystickVector = { x: 0, y: 0 };
@@ -283,40 +360,21 @@ if (joystickContainer && joystickKnob) {
         const rect = joystickContainer.getBoundingClientRect();
         joystickCenter.x = rect.left + rect.width / 2;
         joystickCenter.y = rect.top + rect.height / 2;
-        
-        const touch = e.touches[0];
-        updateJoystickPosition(touch.clientX, touch.clientY);
+        updateJoystickPosition(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
         if (!joystickActive) return;
         e.preventDefault();
-        
-        for (let i = 0; i < e.touches.length; i++) {
-            const touch = e.touches[i];
-            updateJoystickPosition(touch.clientX, touch.clientY);
-        }
+        updateJoystickPosition(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
 
-    window.addEventListener('touchend', (e) => {
-        let stillTouching = false;
-        for (let i = 0; i < e.touches.length; i++) {
-            const touch = e.touches[i];
-            const dx = touch.clientX - joystickCenter.x;
-            const dy = touch.clientY - joystickCenter.y;
-            if (Math.hypot(dx, dy) < 100) stillTouching = true;
-        }
-        
-        if (!stillTouching && joystickActive) {
-            joystickActive = false;
-            joystickVector.x = 0;
-            joystickVector.y = 0;
-            joystickKnob.style.transform = `translate(0px, 0px)`;
-            moveForward = false;
-            moveBackward = false;
-            moveLeft = false;
-            moveRight = false;
-        }
+    window.addEventListener('touchend', () => {
+        joystickActive = false;
+        joystickVector.x = 0;
+        joystickVector.y = 0;
+        joystickKnob.style.transform = `translate(0px, 0px)`;
+        moveForward = moveBackward = moveLeft = moveRight = false;
     });
 }
 
@@ -324,38 +382,19 @@ function updateJoystickPosition(clientX, clientY) {
     let dx = clientX - joystickCenter.x;
     let dy = clientY - joystickCenter.y;
     const distance = Math.hypot(dx, dy);
-
     if (distance > maxJoystickRadius) {
         dx = (dx / distance) * maxJoystickRadius;
         dy = (dy / distance) * maxJoystickRadius;
     }
-
     joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-
     joystickVector.x = dx / maxJoystickRadius;
     joystickVector.y = dy / maxJoystickRadius;
-
     moveForward = joystickVector.y < -0.3;
     moveBackward = joystickVector.y > 0.3;
     moveLeft = joystickVector.x < -0.3;
     moveRight = joystickVector.x > 0.3;
 }
 
-document.addEventListener('contextmenu', (e) => {
-    if (document.pointerLockElement === canvas) e.preventDefault();
-});
-
-document.addEventListener('mousedown', (e) => {
-    if (document.pointerLockElement !== canvas) return;
-    if (e.button === 2) setShieldState(true);
-});
-
-document.addEventListener('mouseup', (e) => {
-    if (document.pointerLockElement !== canvas) return;
-    if (e.button === 2) setShieldState(false);
-});
-
-// HUD / Botones Opcionales
 const btnEscudoEl = document.getElementById('btn-escudo');
 const btnItemsEl = document.getElementById('btn-items');
 const healOverlayEl = document.getElementById('heal-overlay');
@@ -374,39 +413,64 @@ if (btnItemsEl && healOverlayEl) {
     });
 }
 
-// Carga asincrónica de mapas
-async function cargarMapas() {
+async function iniciarJuego() {
+    await EngineMap.cargarMapa("1");
     try {
-        const [b1, b2, txt] = await Promise.all([
-            fetch('assets/mapas/mapa1.bmp').then(r => r.ok ? r.arrayBuffer() : new ArrayBuffer(0)),
-            fetch('assets/mapas/mapa.bmp').then(r => r.ok ? r.arrayBuffer() : new ArrayBuffer(0)),
-            fetch('assets/bmp/recursosi.txt').then(r => r.ok ? r.text() : "")
-        ]);
-        
-        if (b1.byteLength > 0) mapa1Bytes = new Uint8Array(b1);
-        if (b2.byteLength > 0) mapaBytes = new Uint8Array(b2);
-        
-        if (txt) {
+        const txtRes = await fetch('assets/bmp/recursosi.txt');
+        if (txtRes.ok) {
+            const txt = await txtRes.text();
             txt.split('\n').forEach(linea => {
                 const p = linea.split(',');
                 if (p.length >= 5) diccionario[parseInt(p[0].trim())] = p[4].trim();
             });
         }
     } catch (e) {
-        console.warn("Aviso cargando archivos:", e);
+        console.warn("Aviso cargando diccionario:", e);
     }
     actualizarTerreno();
 }
 
-cargarMapas();
+iniciarJuego();
 
-// --- 6. BUCLE DE RENDERIZACIÓN ---
+// --- 6. BUCLE DE RENDERIZACIÓN Y CICLO DÍA/NOCHE ---
 const clock = new THREE.Clock();
+
+// Colores objetivo para el ciclo de 60 segundos
+const colorNocheAmb = new THREE.Color(0x1a1525);
+const colorDiaAmb = new THREE.Color(0xdddddd);
+
+const colorNocheFog = new THREE.Color(0x0a050f);
+const colorDiaFog = new THREE.Color(0x8a929c); // Gris atmosférico diurno
 
 function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
+
+// --- CICLO DE DÍA Y NOCHE (60 segundos totales) ---
+    const cicloTiempo = (elapsedTime % 60) / 60; 
+    const factorDay = (Math.sin(cicloTiempo * Math.PI * 2 - Math.PI / 2) + 1) / 2;
+
+    // Colores exactos: Noche negro profundo (0x020104) y Día gris atmosférico (0x7a828c)
+    const colorNocheAmb = new THREE.Color(0x0f0b15);
+    const colorDiaAmb = new THREE.Color(0xdddddd);
+
+    const colorNocheFog = new THREE.Color(0x020104); // Negro puro para la noche
+    const colorDiaFog = new THREE.Color(0x7a828c);   // Gris para el día
+
+    // 1. Transición de Luz Ambiental
+    ambientLight.color.copy(colorNocheAmb).lerp(colorDiaAmb, factorDay);
+    ambientLight.intensity = THREE.MathUtils.lerp(0.5, 1.8, factorDay);
+
+    // 2. Transición de Niebla y Fondo sincronizados
+    scene.fog.color.copy(colorNocheFog).lerp(colorDiaFog, factorDay);
+    scene.background.copy(scene.fog.color); // Esto asegura que lo que está detrás de la niebla mantenga el mismo tono
+
+    // 3. Luz de la Antorcha del Personaje
+    const targetTorchIntensity = THREE.MathUtils.lerp(4.0, 0.02, factorDay);
+    torchLight.intensity = targetTorchIntensity + Math.sin(elapsedTime * 10) * 0.2 + Math.random() * 0.05;
+
+    // ----------------------------------------------------
 
     yaw += (targetYaw - yaw) * ROTATION_SPEED * delta;
     pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
@@ -428,13 +492,27 @@ function animate() {
     camera.position.z += (velocity.z * Math.cos(yaw) - velocity.x * Math.sin(yaw)) * delta;
     camera.position.y = 0.4;
 
-    heroe.x = Math.floor(camera.position.x);
-    heroe.y = Math.floor(camera.position.z);
-    actualizarTerreno();
+    const nuevaHeroeX = Math.floor(camera.position.x);
+    const nuevaHeroeY = Math.floor(camera.position.z);
 
-    torchLight.intensity = 2.5 + Math.sin(elapsedTime * 10) * 0.4 + Math.random() * 0.1;
+    if (heroe.x !== nuevaHeroeX || heroe.y !== nuevaHeroeY) {
+        heroe.x = nuevaHeroeX;
+        heroe.y = nuevaHeroeY;
+        actualizarTerreno();
+    }
+
+    sprites.forEach(sprite => {
+        if (sprite.visible) {
+            const entId = EngineMap.a[Math.floor(sprite.position.z) * 1000 + Math.floor(sprite.position.x)];
+            const nombreArchivo = diccionario[entId];
+            const props = propiedadesRecursos[nombreArchivo] || { modo: 'VERTICAL' };
+            if (props.modo !== 'HORIZONTAL') {
+                sprite.quaternion.copy(camera.quaternion);
+            }
+        }
+    });
+
     torchLight.position.copy(camera.position);
-
     weaponRig.position.copy(camera.position);
     weaponRig.rotation.copy(camera.rotation);
 
