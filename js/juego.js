@@ -21,16 +21,6 @@ class AetriciaMap {
             await this.bmp2mapa(this.mapaActualID, 'terreno');
             await this.bmp2mapa(this.mapaActualID + "a", 'altura');
 
-            const response = await fetch(`assets/mapas/${this.mapaActualID}.ini`);
-            if (response.ok) {
-                const data = await response.text();
-                const conexiones = data.split('\n').map(linea => linea.trim());
-                this.norte = conexiones[0] || "0";
-                this.sur = conexiones[1] || "0";
-                this.este = conexiones[2] || "0";
-                this.oeste = conexiones[3] || "0";
-            }
-
             this.clienteReemplazaTerreno();
             console.log(`Mapa ${this.mapaActualID} cargado exitosamente.`);
         } catch (error) {
@@ -84,7 +74,6 @@ const RETRO_WIDTH = 320;
 const RETRO_HEIGHT = 180;
 
 const scene = new THREE.Scene();
-// Niebla inicial (Noche)
 scene.fog = new THREE.FogExp2(0x0a050f, 0.015);
 scene.background = new THREE.Color(0x0a050f);
 
@@ -147,7 +136,7 @@ scene.add(grupoRecursos);
 
 const cubes = [];
 const sprites = [];
-const RANGE = 20; // Rango de visión ampliado
+const RANGE = 20; 
 const size = (RANGE * 2 + 1) * (RANGE * 2 + 1);
 
 for (let i = 0; i < size; i++) {
@@ -177,19 +166,36 @@ function getAltura(idx) {
 }
 
 function actualizarTerreno() {
-    let i = 0;
+    for (let k = 0; k < cubes.length; k++) {
+        cubes[k].visible = false;
+        sprites[k].visible = false;
+        sprites[k].material.map = null;
+    }
+
+    let activeIndex = 0;
+
     for(let yy = heroe.y - RANGE; yy <= heroe.y + RANGE; yy++) {
         for(let xx = heroe.x - RANGE; xx <= heroe.x + RANGE; xx++) {
             if (xx >= 0 && xx < 1000 && yy >= 0 && yy < 1000) {
+                
+                const dx = xx - heroe.x;
+                const dy = yy - heroe.y;
+                if ((dx * dx + dy * dy) > RANGE * RANGE) continue;
+
+                if (activeIndex >= size) break;
+
                 const idx = (yy * 1000) + xx;
                 const altura = getAltura(idx);
                 
-                cubes[i].visible = true;
-                cubes[i].position.set(xx, altura, yy);
+                const currentCube = cubes[activeIndex];
+                currentCube.visible = true;
+                currentCube.position.set(xx, altura, yy);
                 
+                const currentSprite = sprites[activeIndex];
                 const entId = EngineMap.a[idx];
+                
                 if (entId > 0 && diccionario[entId]) {
-                    sprites[i].visible = true;
+                    currentSprite.visible = true;
                     const nombreArchivo = diccionario[entId];
                     const url = 'assets/bmp/' + nombreArchivo;
                     
@@ -214,37 +220,33 @@ function actualizarTerreno() {
                         }, undefined, () => {});
                     }
 
-                    sprites[i].material.map = texturasCache[url];
-                    sprites[i].material.needsUpdate = true;
+                    currentSprite.material.map = texturasCache[url];
+                    currentSprite.material.needsUpdate = true;
 
                     if (texturasCache[url].userData && texturasCache[url].userData.width) {
                         const dat = texturasCache[url].userData;
-                        sprites[i].scale.set(dat.width, dat.height, 1);
+                        currentSprite.scale.set(dat.width, dat.height, 1);
                     } else {
                         const w = (1 / defaultPixelScale) * props.escala;
                         const h = (1 / defaultPixelScale) * props.escala;
-                        sprites[i].scale.set(w, h, 1);
+                        currentSprite.scale.set(w, h, 1);
                     }
 
                     if (props.modo === 'HORIZONTAL') {
-                        sprites[i].rotation.set(-Math.PI / 2, 0, 0);
+                        currentSprite.rotation.set(-Math.PI / 2, 0, 0);
                     }
 
                     const hSize = (texturasCache[url].userData && texturasCache[url].userData.height) ? texturasCache[url].userData.height : 1;
                     const baseOffsetY = props.modo === 'HORIZONTAL' ? 0.01 : (hSize / 2);
                     const yOffset = baseOffsetY + (props.offsetY || 0);
 
-                    sprites[i].position.set(xx, altura + yOffset, yy);
+                    currentSprite.position.set(xx, altura + yOffset, yy);
                 } else {
-                    sprites[i].visible = false;
-                    sprites[i].material.map = null;
+                    currentSprite.visible = false;
+                    currentSprite.material.map = null;
                 }
-            } else {
-                cubes[i].visible = false;
-                sprites[i].visible = false;
-                sprites[i].material.map = null;
+                activeIndex++;
             }
-            i++;
         }
     }
 }
@@ -281,19 +283,24 @@ const shieldBoss = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.03), darkI
 shieldGroup.add(shieldBoss);
 weaponRig.add(shieldGroup);
 
-// --- 5. CONTROLES Y MOVIMIENTO ---
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-const velocity = new THREE.Vector3();
-const direction = new THREE.Vector3();
+// --- 5. CONTROLES Y MOVIMIENTO DISCRETO (POR GRILLA) ---
+let gridX = heroe.x;
+let gridY = heroe.y;
+let targetGridX = gridX;
+let targetGridY = gridY;
 
+let facingDirection = 0; // 0: Norte (-Z), 1: Este (+X), 2: Sur (+Z), 3: Oeste (-X)
+let isMovingGrid = false;
+let moveProgress = 1.0; 
+const MOVE_DURATION = 0.15; 
+
+let visualCamX = gridX;
+let visualCamZ = gridY;
+let targetYaw = 0;
 let yaw = 0;
 let pitch = 0.050;
-let targetYaw = 0; 
 const ROTATION_SPEED = 10;
-const MOVE_SPEED = 1.0;
 
-let isTouching = false;
-let lastTouchX = 0, lastTouchY = 0;
 let shieldActive = false;
 let currentShieldDefense = 0;
 let bobbingX = 0, bobbingY = 0;
@@ -312,40 +319,53 @@ function setShieldState(active) {
     }
 }
 
+function intentarMover(dx, dy) {
+    if (isMovingGrid) return; 
+
+    let nextX = gridX;
+    let nextY = gridY;
+
+    if (dx !== 0) {
+        const dirAjustada = (facingDirection + (dx > 0 ? 1 : 3)) % 4;
+        if (dirAjustada === 0) nextY--;
+        else if (dirAjustada === 1) nextX++;
+        else if (dirAjustada === 2) nextY++;
+        else if (dirAjustada === 3) nextX--;
+    } else if (dy !== 0) {
+        const dirAjustada = (facingDirection + (dy < 0 ? 0 : 2)) % 4;
+        if (dirAjustada === 0) nextY--;
+        else if (dirAjustada === 1) nextX++;
+        else if (dirAjustada === 2) nextY++;
+        else if (dirAjustada === 3) nextX--;
+    }
+
+    if (nextX >= 0 && nextX < 1000 && nextY >= 0 && nextY < 1000) {
+        targetGridX = nextX;
+        targetGridY = nextY;
+        isMovingGrid = true;
+        moveProgress = 0.0;
+    }
+}
+
 window.addEventListener('keydown', (e) => {
+    if (isMovingGrid) return;
+
     switch (e.code) {
-        case 'KeyW': case 'ArrowUp': moveForward = true; break;
-        case 'KeyS': case 'ArrowDown': moveBackward = true; break;
-        case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
-        case 'KeyD': case 'ArrowRight': moveRight = true; break;
-        case 'KeyQ': targetYaw += Math.PI / 2; break;
-        case 'KeyE': targetYaw -= Math.PI / 2; break;
+        case 'KeyW': case 'ArrowUp': intentarMover(0, -1); break;
+        case 'KeyS': case 'ArrowDown': intentarMover(0, 1); break;
+        case 'KeyA': case 'ArrowLeft': intentarMover(-1, 0); break;
+        case 'KeyD': case 'ArrowRight': intentarMover(1, 0); break;
+        case 'KeyQ': 
+            facingDirection = (facingDirection + 3) % 4; 
+            targetYaw = facingDirection * (Math.PI / 2);
+            break;
+        case 'KeyE': 
+            facingDirection = (facingDirection + 1) % 4; 
+            targetYaw = facingDirection * (Math.PI / 2);
+            break;
     }
 });
 
-window.addEventListener('keyup', (e) => {
-    switch (e.code) {
-        case 'KeyW': case 'ArrowUp': moveForward = false; break;
-        case 'KeyS': case 'ArrowDown': moveBackward = false; break;
-        case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
-        case 'KeyD': case 'ArrowRight': moveRight = false; break;
-    }
-});
-
-canvas.addEventListener('click', () => { canvas.requestPointerLock(); });
-
-document.addEventListener('mousemove', (e) => {
-    if (document.pointerLockElement === canvas) {
-        const sensitivity = 0.002;
-        yaw -= e.movementX * sensitivity;
-        pitch -= e.movementY * sensitivity;
-        const maxPitch = Math.PI / 2 - 0.05;
-        pitch = Math.max(-maxPitch, Math.min(maxPitch, pitch));
-        targetYaw = yaw;
-    }
-});
-
-// Joysticks y táctil...
 const joystickContainer = document.getElementById('joystick-container');
 const joystickKnob = document.getElementById('joystick-knob');
 let joystickActive = false;
@@ -374,7 +394,6 @@ if (joystickContainer && joystickKnob) {
         joystickVector.x = 0;
         joystickVector.y = 0;
         joystickKnob.style.transform = `translate(0px, 0px)`;
-        moveForward = moveBackward = moveLeft = moveRight = false;
     });
 }
 
@@ -389,10 +408,13 @@ function updateJoystickPosition(clientX, clientY) {
     joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
     joystickVector.x = dx / maxJoystickRadius;
     joystickVector.y = dy / maxJoystickRadius;
-    moveForward = joystickVector.y < -0.3;
-    moveBackward = joystickVector.y > 0.3;
-    moveLeft = joystickVector.x < -0.3;
-    moveRight = joystickVector.x > 0.3;
+
+    if (!isMovingGrid) {
+        if (joystickVector.y < -0.5) intentarMover(0, -1);
+        else if (joystickVector.y > 0.5) intentarMover(0, 1);
+        else if (joystickVector.x < -0.5) intentarMover(-1, 0);
+        else if (joystickVector.x > 0.5) intentarMover(1, 0);
+    }
 }
 
 const btnEscudoEl = document.getElementById('btn-escudo');
@@ -435,42 +457,28 @@ iniciarJuego();
 // --- 6. BUCLE DE RENDERIZACIÓN Y CICLO DÍA/NOCHE ---
 const clock = new THREE.Clock();
 
-// Colores objetivo para el ciclo de 60 segundos
-const colorNocheAmb = new THREE.Color(0x1a1525);
-const colorDiaAmb = new THREE.Color(0xdddddd);
-
-const colorNocheFog = new THREE.Color(0x0a050f);
-const colorDiaFog = new THREE.Color(0x8a929c); // Gris atmosférico diurno
-
 function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-// --- CICLO DE DÍA Y NOCHE (60 segundos totales) ---
     const cicloTiempo = (elapsedTime % 60) / 60; 
     const factorDay = (Math.sin(cicloTiempo * Math.PI * 2 - Math.PI / 2) + 1) / 2;
 
-    // Colores exactos: Noche negro profundo (0x020104) y Día gris atmosférico (0x7a828c)
     const colorNocheAmb = new THREE.Color(0x0f0b15);
     const colorDiaAmb = new THREE.Color(0xdddddd);
 
-    const colorNocheFog = new THREE.Color(0x020104); // Negro puro para la noche
-    const colorDiaFog = new THREE.Color(0x7a828c);   // Gris para el día
+    const colorNocheFog = new THREE.Color(0x020104);
+    const colorDiaFog = new THREE.Color(0x7a828c);   
 
-    // 1. Transición de Luz Ambiental
     ambientLight.color.copy(colorNocheAmb).lerp(colorDiaAmb, factorDay);
     ambientLight.intensity = THREE.MathUtils.lerp(0.5, 1.8, factorDay);
 
-    // 2. Transición de Niebla y Fondo sincronizados
     scene.fog.color.copy(colorNocheFog).lerp(colorDiaFog, factorDay);
-    scene.background.copy(scene.fog.color); // Esto asegura que lo que está detrás de la niebla mantenga el mismo tono
+    scene.background.copy(scene.fog.color); 
 
-    // 3. Luz de la Antorcha del Personaje
     const targetTorchIntensity = THREE.MathUtils.lerp(4.0, 0.02, factorDay);
     torchLight.intensity = targetTorchIntensity + Math.sin(elapsedTime * 10) * 0.2 + Math.random() * 0.05;
-
-    // ----------------------------------------------------
 
     yaw += (targetYaw - yaw) * ROTATION_SPEED * delta;
     pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
@@ -478,26 +486,29 @@ function animate() {
     camera.rotation.set(pitch, yaw, 0);
     camera.order = "YXZ";
 
-    velocity.x -= velocity.x * 10.0 * delta;
-    velocity.z -= velocity.z * 10.0 * delta;
+    // Interpolación de movimiento discreto por grilla
+    if (isMovingGrid) {
+        moveProgress += delta / MOVE_DURATION;
+        if (moveProgress >= 1.0) {
+            moveProgress = 1.0;
+            gridX = targetGridX;
+            gridY = targetGridY;
+            isMovingGrid = false;
+        }
+        visualCamX = THREE.MathUtils.lerp(gridX, targetGridX, moveProgress);
+        visualCamZ = THREE.MathUtils.lerp(gridY, targetGridY, moveProgress);
+    } else {
+        visualCamX = gridX;
+        visualCamZ = gridY;
+    }
 
-    direction.z = Number(moveForward) - Number(moveBackward);
-    direction.x = Number(moveLeft) - Number(moveRight);
-    direction.normalize();
-
-    if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10 * delta;
-    if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10 * delta;
-
-    camera.position.x += (velocity.x * Math.cos(yaw) + velocity.z * Math.sin(yaw)) * delta;
-    camera.position.z += (velocity.z * Math.cos(yaw) - velocity.x * Math.sin(yaw)) * delta;
+    camera.position.x = visualCamX;
+    camera.position.z = visualCamZ;
     camera.position.y = 0.4;
 
-    const nuevaHeroeX = Math.floor(camera.position.x);
-    const nuevaHeroeY = Math.floor(camera.position.z);
-
-    if (heroe.x !== nuevaHeroeX || heroe.y !== nuevaHeroeY) {
-        heroe.x = nuevaHeroeX;
-        heroe.y = nuevaHeroeY;
+    if (heroe.x !== gridX || heroe.y !== gridY) {
+        heroe.x = gridX;
+        heroe.y = gridY;
         actualizarTerreno();
     }
 
@@ -516,10 +527,9 @@ function animate() {
     weaponRig.position.copy(camera.position);
     weaponRig.rotation.copy(camera.rotation);
 
-    const isMoving = (moveForward || moveBackward || moveLeft || moveRight);
-    if (isMoving) {
-        bobbingX = Math.sin(elapsedTime * 12) * 0.015;
-        bobbingY = Math.cos(elapsedTime * 24) * 0.01;
+    if (isMovingGrid) {
+        bobbingX = Math.sin(moveProgress * Math.PI * 4) * 0.015;
+        bobbingY = Math.cos(moveProgress * Math.PI * 8) * 0.01;
     } else {
         bobbingX = 0;
         bobbingY = 0;
