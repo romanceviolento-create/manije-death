@@ -85,7 +85,11 @@ class AetriciaMap {
     canMove(x, y) {
         if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) return false;
         const id = this.a[y * MAP_SIZE + x];
-        return id > 900 || id === 6 || (this.puedepasar && this.puedepasar.includes(String.fromCharCode(id)));
+        
+        // IDs 6 (pasto base) y 90 (camino) configurados como NO SÓLIDOS (transitables)
+        const esTransitable = (id > 900) || (id === 6) || (id === 90);
+        
+        return esTransitable || (this.puedepasar && this.puedepasar.includes(String.fromCharCode(id)));
     }
 }
 
@@ -259,6 +263,9 @@ function actualizarTerreno() {
                             sprites[i].material.map = cachedTex;
                             sprites[i].material.needsUpdate = true;
 
+                            // Guardar el modo en el sprite para controlar su rotación correctamente
+                            sprites[i].userData.modo = props.modo;
+
                             if (cachedTex && cachedTex.userData && cachedTex.userData.width) {
                                 sprites[i].scale.set(cachedTex.userData.width, cachedTex.userData.height, 1);
                             } else {
@@ -428,9 +435,14 @@ function animate() {
 
     actualizarTerreno();
 
+    // Rotación controlada de sprites: Los horizontales se quedan en el piso, los verticales miran a la cámara
     sprites.forEach(sprite => {
         if (sprite.visible) {
-            sprite.quaternion.copy(camera.quaternion);
+            if (sprite.userData && sprite.userData.modo === 'HORIZONTAL') {
+                sprite.rotation.set(-Math.PI / 2, 0, 0);
+            } else {
+                sprite.quaternion.copy(camera.quaternion);
+            }
         }
     });
 
